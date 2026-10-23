@@ -10,6 +10,9 @@ import java.time.LocalDateTime;
 // import java.util.ArrayList;
 // import java.util.List;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Entity
 @Table(name = "repair")
 public class Repair {
@@ -50,11 +53,15 @@ public class Repair {
     @JoinColumn(name = "mechanic_id", nullable = false)
     private AppUser mechanic;
 
-    //Posible relación con repuestos usados (pendiente de aprobación del profesor)
-    // @OneToMany(mappedBy = "repair", cascade = CascadeType.ALL, orphanRemoval = true)
-    // private List<RepairSparePart> usedParts = new ArrayList<>();
+    //Tabla de rompimiento repair_spare_part: repuesto -> cantidad usada
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "repair_spare_part", joinColumns = @JoinColumn(name = "repair_id"))
+    @MapKeyJoinColumn(name = "spare_part_id")
+    @Column(name = "quantity", nullable = false)
+    private Map<SparePart, Integer> usedParts = new HashMap<>();
 
 
+    //Asigna una fecha o un estado si repairDate y status quedaron vacios
     @PrePersist
     private void prePersist() {
         if (repairDate == null) {
@@ -133,12 +140,11 @@ public class Repair {
     public void setMechanic(AppUser mechanic) {
         this.mechanic = mechanic;
     }
+    public Map<SparePart, Integer> getUsedParts() {
+        return usedParts;
+    }
 
-    // public List<RepairSparePart> getUsedParts() {
-    //     return usedParts;
-    // }
-    //
-    // public void setUsedParts(List<RepairSparePart> usedParts) {
-    //     this.usedParts = usedParts;
-    // }
+    public void setUsedParts(Map<SparePart, Integer> usedParts) {
+        this.usedParts = usedParts;
+    }
 }

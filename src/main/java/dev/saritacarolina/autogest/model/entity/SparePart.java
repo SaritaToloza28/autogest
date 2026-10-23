@@ -104,4 +104,18 @@ public class SparePart {
     public void setCompatibleModels(Set<CarModel> compatibleModels) {
         this.compatibleModels = compatibleModels;
     }
+
+    //Le dice a Java que dos repuestos son el mismo si tienen exactamente el mismo id en la base de datos.
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof SparePart other)) return false;
+        return id != null && id.equals(other.getId());
+    }
+
+    //Manda todos los repuestos a la misma sección del estante para que Java no los pierda de vista antes o después de guardarlos.
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

@@ -105,8 +105,9 @@ public class SparePartService {
     public void deleteSparePart(Long sparePartId) throws EntityNotFoundException {
         SparePart sparePart = findSparePartById(sparePartId);
 
-        //TODO: bloquear si fue usado en reparaciones (si se aprueba RepairSparePart)
-        //Las filas de spare_part_car_model se borran solas: SparePart es dueño de la relación
+        if (this.repository.isUsedInRepairs(sparePartId)){
+            throw new IllegalArgumentException("No se puede eliminar: el repuesto fue usado en reparaciones");
+        }
         this.repository.delete(sparePart);
 
         this.imageStorageService.delete(sparePart.getImagePath());
