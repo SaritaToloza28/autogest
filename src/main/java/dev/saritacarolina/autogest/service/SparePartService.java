@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 public class SparePartService {
 
     private static final String IMAGE_FOLDER = "spare-parts";
+    private static final BigDecimal MAX_PRICE = new BigDecimal("9999999999.99");
 
     private final SparePartRepository repository;
     private final CarModelService carModelService;
@@ -129,7 +130,6 @@ public class SparePartService {
 
     public SparePartDTO toDTO(SparePart sparePart){
         return new SparePartDTO(
-                sparePart.getId(),
                 sparePart.getName(),
                 sparePart.getDescription(),
                 sparePart.getPrice(),
@@ -152,9 +152,27 @@ public class SparePartService {
             throw new IllegalArgumentException("El nombre del repuesto es obligatorio");
         }
 
+        if (request.name().trim().length() > 100){
+            throw new IllegalArgumentException("El nombre del repuesto no puede superar 100 caracteres");
+        }
+
+        //descripción opcional
+        if (request.description() != null && request.description().trim().length() > 500){
+            throw new IllegalArgumentException("La descripción no puede superar 500 caracteres");
+        }
+
         //precio mayor a 0
         if (request.price() == null || request.price().compareTo(BigDecimal.ZERO) <= 0){
             throw new IllegalArgumentException("El precio debe ser mayor a 0");
+        }
+
+        //la columna price es numeric(12,2): máximo 2 decimales y 10 dígitos enteros
+        if (request.price().stripTrailingZeros().scale() > 2){
+            throw new IllegalArgumentException("El precio no puede tener más de 2 decimales");
+        }
+
+        if (request.price().compareTo(MAX_PRICE) > 0){
+            throw new IllegalArgumentException("El precio no puede superar 9.999.999.999,99");
         }
 
         //EAN obligatorio

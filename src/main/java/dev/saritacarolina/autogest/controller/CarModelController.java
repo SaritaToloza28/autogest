@@ -43,6 +43,8 @@ public class CarModelController {
     public String getEditForm(@PathVariable("id") Long carModelId, Model model){
         try {
             model.addAttribute("carModel", service.toDTO(service.findCarModelById(carModelId)));
+            //el id va aparte porque el DTO no lo tiene
+            model.addAttribute("carModelId", carModelId);
             return "car-models/list :: form";
         } catch (EntityNotFoundException e) {
             model.addAttribute("carModel", emptyForm());
@@ -76,7 +78,8 @@ public class CarModelController {
             model.addAttribute("carModels", service.findAllCarModels());
             return toast(model, "success", "Modelo " + updated.brand() + " " + updated.name() + " actualizado");
         } catch (IllegalArgumentException | EntityNotFoundException e) {
-            model.addAttribute("carModel", new CarModelDTO(carModelId, carModelRequest.name(), carModelRequest.brand()));
+            model.addAttribute("carModel", carModelRequest);
+            model.addAttribute("carModelId", carModelId);
             return toast(model, "error", e.getMessage());
         }
     }
@@ -87,7 +90,7 @@ public class CarModelController {
             service.deleteCarModel(carModelId);
             model.addAttribute("carModels", service.findAllCarModels());
             return toast(model, "success", "Modelo eliminado");
-        } catch (EntityNotFoundException e) {
+        } catch (IllegalArgumentException | EntityNotFoundException e) {
             model.addAttribute("carModels", service.findAllCarModels());
             return toast(model, "error", e.getMessage());
         }
@@ -100,6 +103,6 @@ public class CarModelController {
     }
 
     private CarModelDTO emptyForm(){
-        return new CarModelDTO(null, "", "");
+        return new CarModelDTO("", "");
     }
 }

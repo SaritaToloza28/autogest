@@ -3,6 +3,8 @@ package dev.saritacarolina.autogest.service;
 import dev.saritacarolina.autogest.model.dto.CarModelDTO;
 import dev.saritacarolina.autogest.model.entity.CarModel;
 import dev.saritacarolina.autogest.repository.CarModelRepository;
+import dev.saritacarolina.autogest.repository.SparePartRepository;
+import dev.saritacarolina.autogest.repository.VehicleRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 
@@ -14,9 +16,15 @@ import java.util.Set;
 public class CarModelService {
 
     private final CarModelRepository repository;
+    private final VehicleRepository vehicleRepository;
+    private final SparePartRepository sparePartRepository;
 
-    public CarModelService(CarModelRepository repository) {
+    public CarModelService(CarModelRepository repository,
+                           VehicleRepository vehicleRepository,
+                           SparePartRepository sparePartRepository) {
         this.repository = repository;
+        this.vehicleRepository = vehicleRepository;
+        this.sparePartRepository = sparePartRepository;
     }
 
     public List<CarModel> findAllCarModels(){
@@ -62,8 +70,17 @@ public class CarModelService {
         return toDTO(carModel);
     }
 
-    public void deleteCarModel(Long carModelId) throws EntityNotFoundException {
+    public void deleteCarModel(Long carModelId) throws EntityNotFoundException, IllegalArgumentException {
         CarModel carModel = findCarModelById(carModelId);
+
+        //no se puede borrar si un vehículo o un repuesto lo está usando
+        if (this.vehicleRepository.existsByCarModelId(carModelId)){
+            throw new IllegalArgumentException("No se puede eliminar: hay vehículos registrados con este modelo");
+        }
+
+        if (this.sparePartRepository.existsByCompatibleModelsId(carModelId)){
+            throw new IllegalArgumentException("No se puede eliminar: hay repuestos compatibles con este modelo");
+        }
 
         this.repository.delete(carModel);
     }
@@ -75,7 +92,6 @@ public class CarModelService {
 
     public CarModelDTO toDTO(CarModel carModel){
         return new CarModelDTO(
-                carModel.getId(),
                 carModel.getName(),
                 carModel.getBrand()
         );
@@ -87,9 +103,17 @@ public class CarModelService {
             throw new IllegalArgumentException("El nombre del modelo es obligatorio");
         }
 
+        if (request.name().trim().length() > 60){
+            throw new IllegalArgumentException("El nombre del modelo no puede superar 60 caracteres");
+        }
+
         //marca obligatoria
         if (request.brand() == null || request.brand().isBlank()){
             throw new IllegalArgumentException("La marca del modelo es obligatoria");
+        }
+
+        if (request.brand().trim().length() > 60){
+            throw new IllegalArgumentException("La marca del modelo no puede superar 60 caracteres");
         }
     }
 

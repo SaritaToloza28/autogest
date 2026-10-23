@@ -7,7 +7,8 @@
     <link rel="stylesheet" href="../../static/css/styles.css" th:href="@{/css/styles.css}">
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 </head>
-<body>
+<body hx-headers='{"X-CSRF-TOKEN": "estatico"}'
+      th:hx-headers="|{&quot;${_csrf.headerName}&quot;: &quot;${_csrf.token}&quot;}|">
 
 <div id="toast-container"></div>
 
@@ -16,12 +17,12 @@
 
     <form id="vehicle-form" class="card" th:fragment="form"
           hx-post="/vehicles"
-          th:hx-post="${vehicle.id == null} ? @{/vehicles}"
-          th:hx-put="${vehicle.id != null} ? @{/vehicles/{id}(id=${vehicle.id})}"
+          th:hx-post="${vehicleId == null} ? @{/vehicles}"
+          th:hx-put="${vehicleId != null} ? @{/vehicles/{id}(id=${vehicleId})}"
           hx-target="this"
           hx-swap="outerHTML">
 
-        <h2 th:text="${vehicle.id == null} ? 'Nuevo vehículo' : 'Editar vehículo'">Nuevo vehículo</h2>
+        <h2 th:text="${vehicleId == null} ? 'Nuevo vehículo' : 'Editar vehículo'">Nuevo vehículo</h2>
 
         <div class="form-grid">
             <div class="field">
@@ -65,9 +66,9 @@
 
         <div class="actions">
             <button type="submit" class="btn btn-primary"
-                    th:text="${vehicle.id == null} ? 'Guardar' : 'Actualizar'">Guardar</button>
+                    th:text="${vehicleId == null} ? 'Guardar' : 'Actualizar'">Guardar</button>
 
-            <button type="button" class="btn" th:if="${vehicle.id != null}"
+            <button type="button" class="btn" th:if="${vehicleId != null}"
                     hx-get="/vehicles/form"
                     th:hx-get="@{/vehicles/form}"
                     hx-target="#vehicle-form"

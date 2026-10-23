@@ -114,8 +114,9 @@ public class SparePart {
     }
 
     //Manda todos los repuestos a la misma sección del estante para que Java no los pierda de vista antes o después de guardarlos.
+    //Usa SparePart.class y no getClass() para que el proxy de Hibernate dé el mismo valor que el objeto real.
     @Override
     public int hashCode() {
-        return getClass().hashCode();
+        return SparePart.class.hashCode();
     }
 }

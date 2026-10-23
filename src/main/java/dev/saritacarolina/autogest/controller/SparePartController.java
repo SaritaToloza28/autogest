@@ -33,14 +33,14 @@ public class SparePartController {
         List<SparePart> spareParts = service.findAllSpareParts();
 
         model.addAttribute("spareParts", spareParts);
-        addFormData(model, emptyForm());
+        addFormData(model, emptyForm(), null);
         return "spare-parts/list";
     }
 
     //Fragmento: formulario vacío (botón "Cancelar")
     @GetMapping("/form")
     public String getEmptyForm(Model model){
-        addFormData(model, emptyForm());
+        addFormData(model, emptyForm(), null);
         return "spare-parts/list :: form";
     }
 
@@ -48,10 +48,10 @@ public class SparePartController {
     @GetMapping("/{id}/edit")
     public String getEditForm(@PathVariable("id") Long sparePartId, Model model){
         try {
-            addFormData(model, service.toDTO(service.findSparePartById(sparePartId)));
+            addFormData(model, service.toDTO(service.findSparePartById(sparePartId)), sparePartId);
             return "spare-parts/list :: form";
         } catch (EntityNotFoundException e) {
-            addFormData(model, emptyForm());
+            addFormData(model, emptyForm(), null);
             return toast(model, "error", e.getMessage());
         }
     }
@@ -63,12 +63,12 @@ public class SparePartController {
         try {
             SparePartDTO created = service.createSparePart(sparePartRequest, image);
 
-            addFormData(model, emptyForm());
+            addFormData(model, emptyForm(), null);
             model.addAttribute("spareParts", service.findAllSpareParts());
             return toast(model, "success", "Repuesto " + created.name() + " creado");
         } catch (IllegalArgumentException | EntityNotFoundException | UncheckedIOException e) {
             //Se devuelve el formulario con lo que escribió el usuario
-            addFormData(model, sparePartRequest);
+            addFormData(model, sparePartRequest, null);
             return toast(model, "error", e.getMessage());
         }
     }
@@ -82,20 +82,11 @@ public class SparePartController {
         try {
             SparePartDTO updated = service.updateSparePart(sparePartId, sparePartRequest, image);
 
-            addFormData(model, emptyForm());
+            addFormData(model, emptyForm(), null);
             model.addAttribute("spareParts", service.findAllSpareParts());
             return toast(model, "success", "Repuesto " + updated.name() + " actualizado");
         } catch (IllegalArgumentException | EntityNotFoundException | UncheckedIOException e) {
-            addFormData(model, new SparePartDTO(
-                    sparePartId,
-                    sparePartRequest.name(),
-                    sparePartRequest.description(),
-                    sparePartRequest.price(),
-                    sparePartRequest.eanCode(),
-                    sparePartRequest.stock(),
-                    null,
-                    sparePartRequest.compatibleModelIds()
-            ));
+            addFormData(model, sparePartRequest, sparePartId);
             return toast(model, "error", e.getMessage());
         }
     }
@@ -106,15 +97,17 @@ public class SparePartController {
             service.deleteSparePart(sparePartId);
             model.addAttribute("spareParts", service.findAllSpareParts());
             return toast(model, "success", "Repuesto eliminado");
-        } catch (EntityNotFoundException e) {
+        } catch (IllegalArgumentException | EntityNotFoundException e) {
             model.addAttribute("spareParts", service.findAllSpareParts());
             return toast(model, "error", e.getMessage());
         }
     }
 
     //El formulario siempre necesita los modelos para los checkboxes
-    private void addFormData(Model model, SparePartDTO sparePart){
+    //sparePartId va aparte porque el DTO no tiene id (null = formulario de creación)
+    private void addFormData(Model model, SparePartDTO sparePart, Long sparePartId){
         model.addAttribute("sparePart", sparePart);
+        model.addAttribute("sparePartId", sparePartId);
         model.addAttribute("carModels", carModelService.findAllCarModels());
     }
 
@@ -125,6 +118,6 @@ public class SparePartController {
     }
 
     private SparePartDTO emptyForm(){
-        return new SparePartDTO(null, "", "", null, "", 0, null, Set.of());
+        return new SparePartDTO("", "", null, "", 0, null, Set.of());
     }
 }

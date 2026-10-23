@@ -3,10 +3,9 @@ package dev.saritacarolina.autogest.service;
 import dev.saritacarolina.autogest.model.dto.AppUserDTO;
 import dev.saritacarolina.autogest.model.entity.AppUser;
 import dev.saritacarolina.autogest.repository.AppUserRepository;
-import org.springframework.data.domain.Sort;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -16,130 +15,165 @@ public class AppUserService {
     private static final int PASSWORD_MIN = 8;
     private static final int PASSWORD_MAX = 72;
 
-    private final AppUserRepository appUserRepository;
+    private final AppUserRepository repository;
     private final PasswordEncoder passwordEncoder;
 
-    public AppUserService(AppUserRepository appUserRepository, PasswordEncoder passwordEncoder) {
-        this.appUserRepository = appUserRepository;
+    public AppUserService(AppUserRepository repository, PasswordEncoder passwordEncoder) {
+        this.repository = repository;
         this.passwordEncoder = passwordEncoder;
     }
 
-    @Transactional(readOnly = true)
-    public List<AppUserDTO> findAll() {
-        return appUserRepository.findAll(Sort.by("fullName")).stream()
-                .map(this::toDTO)
-                .toList();
+    public List<AppUser> findAllAppUsers(){
+        return this.repository.findAllByOrderByFullNameAsc();
     }
 
-    @Transactional(readOnly = true)
-    public AppUserDTO findById(Long id) {
-        return toDTO(getAppUser(id));
+    public AppUser findAppUserById(Long appUserId) throws EntityNotFoundException {
+        return this.repository.findById(appUserId)
+                .orElseThrow(() -> new EntityNotFoundException("Usuario con id " + appUserId + " no encontrado"));
     }
 
-    @Transactional
-    public AppUserDTO save(AppUserDTO dto) {
-        validateRequired(dto);
+    public AppUserDTO createAppUser(AppUserDTO appUserRequest) throws IllegalArgumentException {
+        validateRequest(appUserRequest);
 
-        boolean isNew = dto.id() == null;
-        AppUser appUser = isNew ? new AppUser() : getAppUser(dto.id());
+        String username = appUserRequest.username().trim();
 
-        String username = dto.username().trim();
-        validateUniqueUsername(username, dto.id());
-
-        appUser.setUsername(username);
-        appUser.setFullName(dto.fullName().trim());
-        appUser.setRole(dto.role());
-
-        // Crear: contraseña obligatoria. Editar: vacía = se conserva la actual.
-        if (isNew || hasText(dto.password())) {
-            validatePassword(dto.password());
-            appUser.setPassword(passwordEncoder.encode(dto.password()));
+        if (this.repository.existsByUsernameIgnoreCase(username)){
+            throw new IllegalArgumentException("El usuario '" + username + "' ya existe");
         }
 
-        return toDTO(appUserRepository.save(appUser));
+        //al crear, la contraseña es obligatoria
+        validatePassword(appUserRequest.password());
+
+        AppUser appUser = new AppUser();
+
+        setAttributesFromDTO(appUserRequest, appUser, username);
+        appUser.setPassword(this.passwordEncoder.encode(appUserRequest.password()));
+
+        this.repository.save(appUser);
+
+        return toDTO(appUser);
     }
 
-    @Transactional
-    public void delete(Long id, String currentUsername) {
-        AppUser appUser = getAppUser(id);
+    public AppUserDTO updateAppUser(Long appUserId, AppUserDTO appUserRequest, String currentUsername) throws EntityNotFoundException, IllegalArgumentException {
+        validateRequest(appUserRequest);
 
-        if (appUser.getUsername().equals(currentUsername)) {
+        AppUser appUser = findAppUserById(appUserId);
+
+        String username = appUserRequest.username().trim();
+
+        if (this.repository.existsByUsernameIgnoreCaseAndIdNot(username, appUserId)){
+            throw new IllegalArgumentException("El usuario '" + username + "' ya existe");
+        }
+
+        boolean isCurrentUser = appUser.getUsername().equals(currentUsername);
+
+        //el usuario con sesión iniciada no puede cambiarse su username: la sesión seguiría con el nombre viejo
+        if (isCurrentUser && !appUser.getUsername().equals(username)){
+            throw new IllegalArgumentException("No puedes cambiar tu propio nombre de usuario");
+        }
+
+        //ni su rol: así siempre queda al menos un administrador (el que hace el cambio)
+        if (isCurrentUser && appUser.getRole() != appUserRequest.role()){
+            throw new IllegalArgumentException("No puedes cambiar tu propio rol");
+        }
+
+        setAttributesFromDTO(appUserRequest, appUser, username);
+
+        //al editar, contraseña vacía = se conserva la actual
+        if (hasText(appUserRequest.password())){
+            validatePassword(appUserRequest.password());
+            appUser.setPassword(this.passwordEncoder.encode(appUserRequest.password()));
+        }
+
+        this.repository.save(appUser);
+
+        return toDTO(appUser);
+    }
+
+    public void deleteAppUser(Long appUserId, String currentUsername) throws EntityNotFoundException, IllegalArgumentException {
+        AppUser appUser = findAppUserById(appUserId);
+
+        if (appUser.getUsername().equals(currentUsername)){
             throw new IllegalArgumentException("No puedes eliminar tu propio usuario");
         }
 
-        appUserRepository.delete(appUser);
+        this.repository.delete(appUser);
     }
 
-    @Transactional
     public void changePassword(String username, String currentPassword,
-                               String newPassword, String confirmPassword) {
-        AppUser appUser = appUserRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+                               String newPassword, String confirmPassword) throws EntityNotFoundException, IllegalArgumentException {
+        AppUser appUser = this.repository.findByUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException("Usuario " + username + " no encontrado"));
 
-        if (!hasText(currentPassword) || !passwordEncoder.matches(currentPassword, appUser.getPassword())) {
+        if (!hasText(currentPassword) || !this.passwordEncoder.matches(currentPassword, appUser.getPassword())){
             throw new IllegalArgumentException("La contraseña actual es incorrecta");
         }
 
         validatePassword(newPassword);
 
-        if (!newPassword.equals(confirmPassword)) {
+        if (!newPassword.equals(confirmPassword)){
             throw new IllegalArgumentException("La confirmación no coincide con la nueva contraseña");
         }
 
-        if (passwordEncoder.matches(newPassword, appUser.getPassword())) {
+        if (this.passwordEncoder.matches(newPassword, appUser.getPassword())){
             throw new IllegalArgumentException("La nueva contraseña debe ser distinta a la actual");
         }
 
-        appUser.setPassword(passwordEncoder.encode(newPassword));
-        appUserRepository.save(appUser);
+        appUser.setPassword(this.passwordEncoder.encode(newPassword));
+
+        this.repository.save(appUser);
     }
 
-    // ---------- Auxiliares ----------
-
-    private AppUser getAppUser(Long id) {
-        return appUserRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+    //La contraseña se asigna aparte porque hay que encriptarla
+    public void setAttributesFromDTO(AppUserDTO request, AppUser appUser, String username){
+        appUser.setUsername(username);
+        appUser.setFullName(request.fullName().trim());
+        appUser.setRole(request.role());
     }
 
-    private AppUserDTO toDTO(AppUser appUser) {
-        // La contraseña nunca sale del servicio
-        return new AppUserDTO(appUser.getId(), appUser.getUsername(), appUser.getFullName(), null, appUser.getRole());
+    //La contraseña nunca sale del servicio
+    public AppUserDTO toDTO(AppUser appUser){
+        return new AppUserDTO(
+                appUser.getUsername(),
+                appUser.getFullName(),
+                null,
+                appUser.getRole()
+        );
     }
 
-    private void validateRequired(AppUserDTO dto) {
-        if (!hasText(dto.username())) {
+    private void validateRequest(AppUserDTO request){
+        //usuario obligatorio
+        if (!hasText(request.username())){
             throw new IllegalArgumentException("El usuario es obligatorio");
         }
-        if (dto.username().trim().length() > 50) {
+
+        if (request.username().trim().length() > 50){
             throw new IllegalArgumentException("El usuario no puede superar 50 caracteres");
         }
-        if (!hasText(dto.fullName())) {
+
+        //nombre obligatorio
+        if (!hasText(request.fullName())){
             throw new IllegalArgumentException("El nombre es obligatorio");
         }
-        if (dto.fullName().trim().length() > 100) {
+
+        if (request.fullName().trim().length() > 100){
             throw new IllegalArgumentException("El nombre no puede superar 100 caracteres");
         }
-        if (dto.role() == null) {
+
+        //rol obligatorio
+        if (request.role() == null){
             throw new IllegalArgumentException("El rol es obligatorio");
         }
     }
 
-    private void validateUniqueUsername(String username, Long id) {
-        appUserRepository.findByUsername(username)
-                .filter(existing -> !existing.getId().equals(id))
-                .ifPresent(existing -> {
-                    throw new IllegalArgumentException("El usuario '" + username + "' ya existe");
-                });
-    }
-
-    private void validatePassword(String password) {
-        if (!hasText(password) || password.length() < PASSWORD_MIN || password.length() > PASSWORD_MAX) {
+    private void validatePassword(String password){
+        if (!hasText(password) || password.length() < PASSWORD_MIN || password.length() > PASSWORD_MAX){
             throw new IllegalArgumentException(
                     "La contraseña debe tener entre " + PASSWORD_MIN + " y " + PASSWORD_MAX + " caracteres");
         }
     }
 
-    private boolean hasText(String value) {
+    private boolean hasText(String value){
         return value != null && !value.isBlank();
     }
 }

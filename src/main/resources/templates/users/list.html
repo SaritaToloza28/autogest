@@ -24,12 +24,12 @@
 
     <form id="user-form" class="card" th:fragment="user-form" method="post"
           hx-post="/users"
-          th:hx-post="${appUser.id == null} ? @{/users}"
-          th:hx-put="${appUser.id != null} ? @{/users/{id}(id=${appUser.id})}"
+          th:hx-post="${appUserId == null} ? @{/users}"
+          th:hx-put="${appUserId != null} ? @{/users/{id}(id=${appUserId})}"
           hx-target="this"
           hx-swap="outerHTML">
 
-        <h2 th:text="${appUser.id == null} ? 'Nuevo usuario' : 'Editar usuario'">Nuevo usuario</h2>
+        <h2 th:text="${appUserId == null} ? 'Nuevo usuario' : 'Editar usuario'">Nuevo usuario</h2>
 
         <div class="form-grid">
             <div class="field">
@@ -48,8 +48,8 @@
                 <label for="password">Contraseña</label>
                 <input id="password" type="password" name="password" maxlength="72"
                        placeholder="Mínimo 8 caracteres"
-                       th:placeholder="${appUser.id == null} ? 'Mínimo 8 caracteres' : 'Vacío = conservar la actual'"
-                       th:required="${appUser.id == null}">
+                       th:placeholder="${appUserId == null} ? 'Mínimo 8 caracteres' : 'Vacío = conservar la actual'"
+                       th:required="${appUserId == null}">
             </div>
 
             <div class="field">
@@ -66,9 +66,9 @@
 
         <div class="actions">
             <button type="submit" class="btn btn-primary"
-                    th:text="${appUser.id == null} ? 'Guardar' : 'Actualizar'">Guardar</button>
+                    th:text="${appUserId == null} ? 'Guardar' : 'Actualizar'">Guardar</button>
 
-            <button type="button" class="btn" th:if="${appUser.id != null}"
+            <button type="button" class="btn" th:if="${appUserId != null}"
                     hx-get="/users/form"
                     th:hx-get="@{/users/form}"
                     hx-target="#user-form"

@@ -35,7 +35,7 @@ public class Repair {
     private RepairStatus status;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "service_type", nullable = false, length = 10)
+    @Column(name = "service_type", nullable = false, length = 20)
     private ServiceType serviceType;
 
     //Solo obligatorias si serviceType = EXTERNAL
@@ -46,7 +46,7 @@ public class Repair {
     private BigDecimal longitude;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "vehicle_license_plate", nullable = false)
+    @JoinColumn(name = "vehicle_id", nullable = false)
     private Vehicle vehicle;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

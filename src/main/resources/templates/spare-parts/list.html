@@ -7,7 +7,8 @@
     <link rel="stylesheet" href="../../static/css/styles.css" th:href="@{/css/styles.css}">
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 </head>
-<body>
+<body hx-headers='{"X-CSRF-TOKEN": "estatico"}'
+      th:hx-headers="|{&quot;${_csrf.headerName}&quot;: &quot;${_csrf.token}&quot;}|">
 
 <div id="toast-container"></div>
 
@@ -16,12 +17,12 @@
 
     <form id="spare-part-form" class="card" th:fragment="form"
           hx-post="/spare-parts"
-          th:hx-post="${sparePart.id == null} ? @{/spare-parts} : @{/spare-parts/{id}(id=${sparePart.id})}"
+          th:hx-post="${sparePartId == null} ? @{/spare-parts} : @{/spare-parts/{id}(id=${sparePartId})}"
           hx-encoding="multipart/form-data"
           hx-target="this"
           hx-swap="outerHTML">
 
-        <h2 th:text="${sparePart.id == null} ? 'Nuevo repuesto' : 'Editar repuesto'">Nuevo repuesto</h2>
+        <h2 th:text="${sparePartId == null} ? 'Nuevo repuesto' : 'Editar repuesto'">Nuevo repuesto</h2>
 
         <div class="form-grid">
             <div class="field">
@@ -82,16 +83,16 @@
 
             <div class="field field-full">
                 <label for="image"
-                       th:text="${sparePart.id == null} ? 'Imagen (opcional)' : 'Nueva imagen (déjala vacía para conservar la actual)'">Imagen (opcional)</label>
+                       th:text="${sparePartId == null} ? 'Imagen (opcional)' : 'Nueva imagen (déjala vacía para conservar la actual)'">Imagen (opcional)</label>
                 <input id="image" type="file" name="image" accept="image/jpeg,image/png,image/webp">
             </div>
         </div>
 
         <div class="actions">
             <button type="submit" class="btn btn-primary"
-                    th:text="${sparePart.id == null} ? 'Guardar' : 'Actualizar'">Guardar</button>
+                    th:text="${sparePartId == null} ? 'Guardar' : 'Actualizar'">Guardar</button>
 
-            <button type="button" class="btn" th:if="${sparePart.id != null}"
+            <button type="button" class="btn" th:if="${sparePartId != null}"
                     hx-get="/spare-parts/form"
                     th:hx-get="@{/spare-parts/form}"
                     hx-target="#spare-part-form"

@@ -31,14 +31,14 @@ public class VehicleController {
         List<Vehicle> vehicles = service.findAllVehicles();
 
         model.addAttribute("vehicles", vehicles);
-        addFormData(model, emptyForm());
+        addFormData(model, emptyForm(), null);
         return "vehicles/list";
     }
 
     //Fragmento: formulario vacío (botón "Cancelar")
     @GetMapping("/form")
     public String getEmptyForm(Model model){
-        addFormData(model, emptyForm());
+        addFormData(model, emptyForm(), null);
         return "vehicles/list :: form";
     }
 
@@ -46,10 +46,10 @@ public class VehicleController {
     @GetMapping("/{id}/edit")
     public String getEditForm(@PathVariable("id") Long vehicleId, Model model){
         try {
-            addFormData(model, service.toDTO(service.findVehicleById(vehicleId)));
+            addFormData(model, service.toDTO(service.findVehicleById(vehicleId)), vehicleId);
             return "vehicles/list :: form";
         } catch (EntityNotFoundException e) {
-            addFormData(model, emptyForm());
+            addFormData(model, emptyForm(), null);
             return toast(model, "error", e.getMessage());
         }
     }
@@ -59,12 +59,12 @@ public class VehicleController {
         try {
             VehicleDTO created = service.createVehicle(vehicleRequest);
 
-            addFormData(model, emptyForm());
+            addFormData(model, emptyForm(), null);
             model.addAttribute("vehicles", service.findAllVehicles());
             return toast(model, "success", "Vehículo " + created.licensePlate() + " registrado");
         } catch (IllegalArgumentException | EntityNotFoundException e) {
             //Se devuelve el formulario con lo que escribió el usuario
-            addFormData(model, vehicleRequest);
+            addFormData(model, vehicleRequest, null);
             return toast(model, "error", e.getMessage());
         }
     }
@@ -76,17 +76,11 @@ public class VehicleController {
         try {
             VehicleDTO updated = service.updateVehicle(vehicleId, vehicleRequest);
 
-            addFormData(model, emptyForm());
+            addFormData(model, emptyForm(), null);
             model.addAttribute("vehicles", service.findAllVehicles());
             return toast(model, "success", "Vehículo " + updated.licensePlate() + " actualizado");
         } catch (IllegalArgumentException | EntityNotFoundException e) {
-            addFormData(model, new VehicleDTO(
-                    vehicleId,
-                    vehicleRequest.licensePlate(),
-                    vehicleRequest.plateColor(),
-                    vehicleRequest.ownerName(),
-                    vehicleRequest.carModelId()
-            ));
+            addFormData(model, vehicleRequest, vehicleId);
             return toast(model, "error", e.getMessage());
         }
     }
@@ -104,8 +98,10 @@ public class VehicleController {
     }
 
     //El formulario siempre necesita los modelos y los colores para los <select>
-    private void addFormData(Model model, VehicleDTO vehicle){
+    //vehicleId va aparte porque el DTO no tiene id (null = formulario de creación)
+    private void addFormData(Model model, VehicleDTO vehicle, Long vehicleId){
         model.addAttribute("vehicle", vehicle);
+        model.addAttribute("vehicleId", vehicleId);
         model.addAttribute("carModels", carModelService.findAllCarModels());
         model.addAttribute("plateColors", PlateColor.values());
     }
@@ -117,6 +113,6 @@ public class VehicleController {
     }
 
     private VehicleDTO emptyForm(){
-        return new VehicleDTO(null, "", null, "", null);
+        return new VehicleDTO("", null, "", null);
     }
 }

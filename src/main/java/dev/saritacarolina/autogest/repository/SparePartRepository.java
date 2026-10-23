@@ -25,13 +25,8 @@ public interface SparePartRepository extends JpaRepository<SparePart, Long> {
 
     boolean existsByCompatibleModelsId(Long carModelId);
 
-    //Podemos ver si cambiar a este
-    //Le pregunta a la base de datos si ese repuesto ya fue gastado en alguna reparación
-    //@Query("SELECT COUNT(r) > 0 FROM Repair r JOIN r.usedParts p WHERE KEY(p).id = :sparePartId")
-    //boolean isUsedInRepairs(@Param("sparePartId") Long sparePartId);
-
-    //va directo a la tabla de rompimiento física en la base de datos y pregunta si el repuesto aparece al menos una vez.
-    @Query(value = "SELECT COUNT(*) > 0 FROM repair_spare_part WHERE spare_part_id = :sparePartId",
-            nativeQuery = true)
+    //Le pregunta a la base de datos si ese repuesto ya fue gastado en alguna reparación.
+    //JPQL: usa la entidad Repair y su mapa usedParts (KEY(p) = el repuesto), así Hibernate la valida al arrancar.
+    @Query("SELECT COUNT(r) > 0 FROM Repair r JOIN r.usedParts p WHERE KEY(p).id = :sparePartId")
     boolean isUsedInRepairs(@Param("sparePartId") Long sparePartId);
 }

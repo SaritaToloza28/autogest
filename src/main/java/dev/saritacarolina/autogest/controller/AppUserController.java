@@ -3,6 +3,7 @@ package dev.saritacarolina.autogest.controller;
 import dev.saritacarolina.autogest.model.constant.Role;
 import dev.saritacarolina.autogest.model.dto.AppUserDTO;
 import dev.saritacarolina.autogest.service.AppUserService;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +24,7 @@ public class AppUserController {
     @GetMapping("/users")
     public String list(Model model) {
         model.addAttribute("appUser", emptyAppUser());
-        model.addAttribute("appUsers", appUserService.findAll());
+        model.addAttribute("appUsers", appUserService.findAllAppUsers());
         model.addAttribute("roles", Role.values());
         return "users/list";
     }
@@ -37,29 +38,58 @@ public class AppUserController {
 
     @GetMapping("/users/{id}/edit")
     public String editForm(@PathVariable Long id, Model model) {
-        model.addAttribute("appUser", appUserService.findById(id));
         model.addAttribute("roles", Role.values());
-        return "users/list :: user-form";
+        try {
+            model.addAttribute("appUser", appUserService.toDTO(appUserService.findAppUserById(id)));
+            //el id va aparte porque el DTO no lo tiene
+            model.addAttribute("appUserId", id);
+            return "users/list :: user-form";
+        } catch (EntityNotFoundException e) {
+            model.addAttribute("appUser", emptyAppUser());
+            addToast(model, "error", e.getMessage());
+            return "users/response";
+        }
     }
 
     @PostMapping("/users")
     public String create(@ModelAttribute AppUserDTO dto, Model model) {
-        return saveAndRespond(dto, "Usuario creado correctamente", model);
+        model.addAttribute("roles", Role.values());
+        try {
+            appUserService.createAppUser(dto);
+            model.addAttribute("appUser", emptyAppUser());
+            model.addAttribute("appUsers", appUserService.findAllAppUsers());
+            addToast(model, "success", "Usuario creado correctamente");
+        } catch (IllegalArgumentException e) {
+            // Se devuelve el formulario con lo que escribió el usuario, sin la contraseña
+            model.addAttribute("appUser", withoutPassword(dto));
+            addToast(model, "error", e.getMessage());
+        }
+        return "users/response";
     }
 
     @PutMapping("/users/{id}")
-    public String update(@PathVariable Long id, @ModelAttribute AppUserDTO dto, Model model) {
-        AppUserDTO withId = new AppUserDTO(id, dto.username(), dto.fullName(), dto.password(), dto.role());
-        return saveAndRespond(withId, "Usuario actualizado correctamente", model);
+    public String update(@PathVariable Long id, @ModelAttribute AppUserDTO dto, Principal principal, Model model) {
+        model.addAttribute("roles", Role.values());
+        try {
+            appUserService.updateAppUser(id, dto, principal.getName());
+            model.addAttribute("appUser", emptyAppUser());
+            model.addAttribute("appUsers", appUserService.findAllAppUsers());
+            addToast(model, "success", "Usuario actualizado correctamente");
+        } catch (IllegalArgumentException | EntityNotFoundException e) {
+            model.addAttribute("appUser", withoutPassword(dto));
+            model.addAttribute("appUserId", id);
+            addToast(model, "error", e.getMessage());
+        }
+        return "users/response";
     }
 
     @DeleteMapping("/users/{id}")
     public String delete(@PathVariable Long id, Principal principal, Model model) {
         try {
-            appUserService.delete(id, principal.getName());
-            model.addAttribute("appUsers", appUserService.findAll());
+            appUserService.deleteAppUser(id, principal.getName());
+            model.addAttribute("appUsers", appUserService.findAllAppUsers());
             addToast(model, "success", "Usuario eliminado correctamente");
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | EntityNotFoundException e) {
             addToast(model, "error", e.getMessage());
         }
         return "users/response";
@@ -82,7 +112,7 @@ public class AppUserController {
             appUserService.changePassword(principal.getName(), currentPassword, newPassword, confirmPassword);
             model.addAttribute("clearForm", true);
             addToast(model, "success", "Contraseña actualizada correctamente");
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | EntityNotFoundException e) {
             addToast(model, "error", e.getMessage());
         }
         return "account/response";
@@ -90,24 +120,12 @@ public class AppUserController {
 
     // ---------- Auxiliares ----------
 
-    private String saveAndRespond(AppUserDTO dto, String successMessage, Model model) {
-        model.addAttribute("roles", Role.values());
-        try {
-            appUserService.save(dto);
-            model.addAttribute("appUser", emptyAppUser());
-            model.addAttribute("appUsers", appUserService.findAll());
-            addToast(model, "success", successMessage);
-        } catch (IllegalArgumentException e) {
-            // Se devuelve el formulario con lo que escribió el usuario, sin la contraseña
-            model.addAttribute("appUser",
-                    new AppUserDTO(dto.id(), dto.username(), dto.fullName(), null, dto.role()));
-            addToast(model, "error", e.getMessage());
-        }
-        return "users/response";
+    private AppUserDTO emptyAppUser() {
+        return new AppUserDTO(null, null, null, null);
     }
 
-    private AppUserDTO emptyAppUser() {
-        return new AppUserDTO(null, null, null, null, null);
+    private AppUserDTO withoutPassword(AppUserDTO dto) {
+        return new AppUserDTO(dto.username(), dto.fullName(), null, dto.role());
     }
 
     private void addToast(Model model, String type, String message) {

@@ -86,7 +86,6 @@ public class VehicleService {
 
     public VehicleDTO toDTO(Vehicle vehicle){
         return new VehicleDTO(
-                vehicle.getId(),
                 vehicle.getLicensePlate(),
                 vehicle.getPlateColor(),
                 vehicle.getOwnerName(),
@@ -120,6 +119,10 @@ public class VehicleService {
         //propietario obligatorio
         if (request.ownerName() == null || request.ownerName().isBlank()){
             throw new IllegalArgumentException("El nombre del propietario es obligatorio");
+        }
+
+        if (request.ownerName().trim().length() > 100){
+            throw new IllegalArgumentException("El nombre del propietario no puede superar 100 caracteres");
         }
 
         //modelo obligatorio
