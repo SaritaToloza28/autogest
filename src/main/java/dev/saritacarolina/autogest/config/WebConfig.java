@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+// Permite acceder públicamente desde el navegador a los archivos físicos guardados en la carpeta local "uploads/".
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Autogest</title>
+    <link rel="stylesheet" href="../../static/css/styles.css" th:href="@{/css/styles.css}">
+</head>
+<body class="auth-page">
+
+<main class="card auth-card">
+    <h1 class="brand">Autogest</h1>
+    <p class="subtitle">Sistema de gestión para taller automotriz</p>
+
+    <div class="actions actions-stack">
+        <a class="btn btn-primary btn-block" href="../auth/login.html" th:href="@{/login}">Iniciar sesión</a>
+        <a class="btn btn-block" href="repair-status.html" th:href="@{/repair-status}">Consultar mi reparación</a>
+    </div>
+</main>
+
+</body>
+</html>

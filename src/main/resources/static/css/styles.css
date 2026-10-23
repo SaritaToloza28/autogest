@@ -229,3 +229,46 @@ fieldset.field legend { margin-bottom: 4px; }
 .mono { font-family: monospace; }
 
 .stock-empty { color: var(--danger); font-weight: 700; }
+
+/* Inicio y login: tarjeta centrada */
+.auth-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 380px;
+    margin: 0;
+    padding: 32px 24px;
+    text-align: center;
+}
+
+.auth-card form { text-align: left; }
+
+.brand { margin: 0 0 4px; color: var(--primary); }
+
+.subtitle { margin: 0 0 24px; color: var(--muted); }
+
+.actions-stack { flex-direction: column; }
+
+.btn-block {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    text-align: center;
+    text-decoration: none;
+    color: inherit;
+}
+
+.btn-primary.btn-block { color: #fff; }
+
+.link {
+    display: inline-block;
+    margin-top: 16px;
+    color: var(--primary);
+    font-size: 0.9em;
+}

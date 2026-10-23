@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Iniciar sesión | Autogest</title>
+    <link rel="stylesheet" href="../../static/css/styles.css" th:href="@{/css/styles.css}">
+</head>
+<body class="auth-page">
+
+<div id="toast-container">
+    <div class="toast toast-error" th:if="${param.error}">Usuario o contraseña incorrectos</div>
+    <div class="toast toast-success" th:if="${param.logout}">Sesión cerrada correctamente</div>
+</div>
+
+<main class="card auth-card">
+    <h1 class="brand">Autogest</h1>
+    <p class="subtitle">Ingresa con tu usuario</p>
+
+    <form method="post" action="/login" th:action="@{/login}">
+        <div class="field">
+            <label for="username">Usuario</label>
+            <input id="username" type="text" name="username" maxlength="50" required autofocus>
+        </div>
+
+        <div class="field">
+            <label for="password">Contraseña</label>
+            <input id="password" type="password" name="password" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">Ingresar</button>
+    </form>
+
+    <a class="link" href="../public/index.html" th:href="@{/}">Volver al inicio</a>
+</main>
+
+</body>
+</html>
