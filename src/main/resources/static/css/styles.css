@@ -1,0 +1,231 @@
+:root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --text: #1f2933;
+    --muted: #6b7280;
+    --border: #d9dde3;
+    --primary: #2563eb;
+    --danger: #dc2626;
+    --success: #16a34a;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 24px 16px;
+}
+
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 24px;
+}
+
+/* Formulario */
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+}
+
+.field input {
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font: inherit;
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* Botones */
+.btn {
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    font: inherit;
+    cursor: pointer;
+}
+
+.btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+.btn-danger  { background: var(--danger);  border-color: var(--danger);  color: #fff; }
+
+/* Tabla */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    padding: 0;
+}
+
+.table th,
+.table td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+.table th { color: var(--muted); font-weight: 600; }
+
+.empty { text-align: center; color: var(--muted); }
+
+/* Toast */
+#toast-container {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.toast {
+    max-height: 80px;
+    overflow: hidden;
+    padding: 12px 16px;
+    border-radius: 6px;
+    color: #fff;
+    animation: toast-life 4s ease forwards;
+}
+
+.toast-success { background: var(--success); }
+.toast-error   { background: var(--danger); }
+
+/* Aparece, se mantiene ~3s y se oculta sin JavaScript */
+@keyframes toast-life {
+    0%   { opacity: 0; transform: translateY(-8px); }
+    10%  { opacity: 1; transform: translateY(0); }
+    85%  { opacity: 1; max-height: 80px; padding: 12px 16px; }
+    100% { opacity: 0; max-height: 0; padding: 0 16px; visibility: hidden; }
+}
+
+/* Formulario en dos columnas (una en móvil) */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    column-gap: 16px;
+}
+
+.field select {
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    font: inherit;
+}
+
+.uppercase { text-transform: uppercase; }
+
+/* Tabla con scroll horizontal en pantallas pequeñas */
+.table-wrap { overflow-x: auto; }
+
+/* Placa */
+.plate {
+    display: inline-block;
+    padding: 2px 8px;
+    border: 2px solid #1f2933;
+    border-radius: 4px;
+    font-family: monospace;
+    font-weight: 700;
+    letter-spacing: 1px;
+    white-space: nowrap;
+}
+
+.plate-COLOR_YELLOW,
+.plate-COLOR_YELLOW_MOTORCYCLE { background: #facc15; color: #111; }
+.plate-COLOR_WHITE             { background: #ffffff; color: #111; }
+.plate-COLOR_BLUE              { background: #1d4ed8; color: #fff; }
+.plate-COLOR_GREEN             { background: #15803d; color: #fff; }
+.plate-COLOR_RED               { background: #b91c1c; color: #fff; }
+
+/* Página más ancha para tablas con muchas columnas */
+.container-wide { max-width: 1100px; }
+
+/* Campo que ocupa todo el ancho del grid */
+.field-full { grid-column: 1 / -1; }
+
+.field textarea {
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font: inherit;
+    resize: vertical;
+}
+
+fieldset.field {
+    border: none;
+    padding: 0;
+    margin: 0 0 12px;
+}
+
+fieldset.field legend { margin-bottom: 4px; }
+
+/* Checkboxes de modelos */
+.checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 6px 16px;
+}
+
+.checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+/* Etiquetas de modelos en la tabla */
+.tag {
+    display: inline-block;
+    margin: 2px 4px 2px 0;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    font-size: 0.85em;
+    white-space: nowrap;
+}
+
+/* Imágenes */
+.thumb {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+}
+
+.thumb-empty {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+}
+
+.thumb-lg {
+    width: 160px;
+    height: 160px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.mono { font-family: monospace; }
+
+.stock-empty { color: var(--danger); font-weight: 700; }

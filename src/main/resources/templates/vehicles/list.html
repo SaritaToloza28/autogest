@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vehículos | Autogest</title>
+    <link rel="stylesheet" href="../../static/css/styles.css" th:href="@{/css/styles.css}">
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<main class="container">
+    <h1>Vehículos</h1>
+
+    <form id="vehicle-form" class="card" th:fragment="form"
+          hx-post="/vehicles"
+          th:hx-post="${vehicle.id == null} ? @{/vehicles}"
+          th:hx-put="${vehicle.id != null} ? @{/vehicles/{id}(id=${vehicle.id})}"
+          hx-target="this"
+          hx-swap="outerHTML">
+
+        <h2 th:text="${vehicle.id == null} ? 'Nuevo vehículo' : 'Editar vehículo'">Nuevo vehículo</h2>
+
+        <div class="form-grid">
+            <div class="field">
+                <label for="plateColor">Color de placa</label>
+                <select id="plateColor" name="plateColor" required>
+                    <option value="">Seleccione…</option>
+                    <option th:each="c : ${plateColors}"
+                            value="COLOR_YELLOW"
+                            th:value="${c}"
+                            th:text="|${c.label} — ej. ${c.example}|"
+                            th:selected="${c == vehicle.plateColor}">Amarilla (particular) — ej. ABC-123</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="licensePlate">Placa</label>
+                <input id="licensePlate" class="uppercase" type="text" name="licensePlate"
+                       maxlength="10" required placeholder="ABC-123"
+                       value="" th:value="${vehicle.licensePlate}">
+            </div>
+
+            <div class="field">
+                <label for="ownerName">Propietario</label>
+                <input id="ownerName" type="text" name="ownerName" maxlength="100" required
+                       value="" th:value="${vehicle.ownerName}">
+            </div>
+
+            <div class="field">
+                <label for="carModelId">Modelo</label>
+                <select id="carModelId" name="carModelId" required>
+                    <option value=""
+                            th:text="${#lists.isEmpty(carModels)} ? 'No hay modelos registrados' : 'Seleccione…'">Seleccione…</option>
+                    <option th:each="m : ${carModels}"
+                            value="1"
+                            th:value="${m.id}"
+                            th:text="|${m.brand} ${m.name}|"
+                            th:selected="${m.id == vehicle.carModelId}">Mazda 3</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button type="submit" class="btn btn-primary"
+                    th:text="${vehicle.id == null} ? 'Guardar' : 'Actualizar'">Guardar</button>
+
+            <button type="button" class="btn" th:if="${vehicle.id != null}"
+                    hx-get="/vehicles/form"
+                    th:hx-get="@{/vehicles/form}"
+                    hx-target="#vehicle-form"
+                    hx-swap="outerHTML">Cancelar</button>
+        </div>
+    </form>
+
+    <div class="table-wrap">
+        <table id="vehicle-table" class="card table" th:fragment="table" hx-swap-oob="true">
+            <thead>
+            <tr>
+                <th>Placa</th>
+                <th>Tipo</th>
+                <th>Propietario</th>
+                <th>Modelo</th>
+                <th>Acciones</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr th:each="v : ${vehicles}">
+                <td>
+                    <span class="plate plate-COLOR_YELLOW"
+                          th:classappend="${'plate-' + v.plateColor}"
+                          th:text="${v.licensePlate}">ABC-123</span>
+                </td>
+                <td th:text="${v.plateColor.label}">Amarilla (particular)</td>
+                <td th:text="${v.ownerName}">Juan Pérez</td>
+                <td th:text="|${v.carModel.brand} ${v.carModel.name}|">Mazda 3</td>
+                <td class="actions">
+                    <button type="button" class="btn"
+                            hx-get="/vehicles/1/edit"
+                            th:hx-get="@{/vehicles/{id}/edit(id=${v.id})}"
+                            hx-target="#vehicle-form"
+                            hx-swap="outerHTML">Editar</button>
+
+                    <button type="button" class="btn btn-danger"
+                            hx-delete="/vehicles/1"
+                            th:hx-delete="@{/vehicles/{id}(id=${v.id})}"
+                            hx-swap="none"
+                            hx-confirm="¿Eliminar este vehículo?"
+                            th:hx-confirm="|¿Eliminar el vehículo ${v.licensePlate}?|">Eliminar</button>
+                </td>
+            </tr>
+
+            <tr th:remove="all">
+                <td><span class="plate plate-COLOR_BLUE">CD-1234</span></td>
+                <td>Azul (diplomático)</td>
+                <td>Embajada</td>
+                <td>Toyota Prado</td>
+                <td class="actions">
+                    <button type="button" class="btn">Editar</button>
+                    <button type="button" class="btn btn-danger">Eliminar</button>
+                </td>
+            </tr>
+
+            <tr th:if="${#lists.isEmpty(vehicles)}">
+                <td colspan="5" class="empty">No hay vehículos registrados</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+
+</body>
+</html>

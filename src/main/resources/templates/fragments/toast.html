@@ -1,0 +1,5 @@
+<div th:fragment="toast" hx-swap-oob="beforeend:#toast-container">
+    <div class="toast toast-success"
+         th:classappend="${toastType == 'error'} ? 'toast-error' : 'toast-success'"
+         th:text="${toastMessage}">Mensaje de prueba</div>
+</div>

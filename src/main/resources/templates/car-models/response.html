@@ -1,0 +1,9 @@
+<th:block th:if="${carModel != null}">
+    <form th:replace="~{car-models/list :: form}"></form>
+</th:block>
+
+<th:block th:if="${carModels != null}">
+    <table th:replace="~{car-models/list :: table}"></table>
+</th:block>
+
+<div th:replace="~{fragments/toast :: toast}"></div>

@@ -1,0 +1,23 @@
+package dev.saritacarolina.autogest.controller;
+
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.ModelAndView;
+
+@ControllerAdvice
+public class GlobalExceptionHandler {
+
+    //La imagen supera el límite: Spring la rechaza antes de llegar al controlador
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ModelAndView handleMaxUploadSize(HttpServletResponse response){
+        //No reemplaza el formulario, solo muestra el Toast
+        response.setHeader("HX-Reswap", "none");
+
+        ModelAndView modelAndView = new ModelAndView("fragments/toast :: toast");
+        modelAndView.addObject("toastType", "error");
+        modelAndView.addObject("toastMessage", "La imagen supera el tamaño máximo de 2 MB");
+        return modelAndView;
+    }
+}
