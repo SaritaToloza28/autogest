@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 
 @Controller
+@RequestMapping("/users")
 public class AppUserController {
 
     private final AppUserService appUserService;
@@ -21,7 +22,7 @@ public class AppUserController {
 
     // ---------- Gestión de usuarios (ADMIN) ----------
 
-    @GetMapping("/users")
+    @GetMapping
     public String list(Model model) {
         model.addAttribute("appUser", emptyAppUser());
         model.addAttribute("appUsers", appUserService.findAllAppUsers());
@@ -29,14 +30,14 @@ public class AppUserController {
         return "users/list";
     }
 
-    @GetMapping("/users/form")
+    @GetMapping("/form")
     public String emptyForm(Model model) {
         model.addAttribute("appUser", emptyAppUser());
         model.addAttribute("roles", Role.values());
         return "users/list :: user-form";
     }
 
-    @GetMapping("/users/{id}/edit")
+    @GetMapping("/{id}/edit")
     public String editForm(@PathVariable Long id, Model model) {
         model.addAttribute("roles", Role.values());
         try {
@@ -51,7 +52,7 @@ public class AppUserController {
         }
     }
 
-    @PostMapping("/users")
+    @PostMapping
     public String create(@ModelAttribute AppUserDTO dto, Model model) {
         model.addAttribute("roles", Role.values());
         try {
@@ -67,7 +68,7 @@ public class AppUserController {
         return "users/response";
     }
 
-    @PutMapping("/users/{id}")
+    @PutMapping("/{id}")
     public String update(@PathVariable Long id, @ModelAttribute AppUserDTO dto, Principal principal, Model model) {
         model.addAttribute("roles", Role.values());
         try {
@@ -83,7 +84,7 @@ public class AppUserController {
         return "users/response";
     }
 
-    @DeleteMapping("/users/{id}")
+    @DeleteMapping("/{id}")
     public String delete(@PathVariable Long id, Principal principal, Model model) {
         try {
             appUserService.deleteAppUser(id, principal.getName());
@@ -95,6 +96,7 @@ public class AppUserController {
         return "users/response";
     }
 
+    //TODO: cambiar esto de controlador
     // ---------- Cambiar mi contraseña (todos los roles) ----------
 
     @GetMapping("/account/password")

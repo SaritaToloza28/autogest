@@ -7,12 +7,13 @@ import jakarta.persistence.*;
 @Table(name = "vehicle")
 public class Vehicle {
 
+
+    //TODO: Añadir teléfono de contacto
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
 
-    //Placa normalizada (ej. ABC-123), única
     @Column(name = "license_plate", nullable = false, unique = true, length = 7)
     private String licensePlate;
 
@@ -26,7 +27,6 @@ public class Vehicle {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "car_model_id", nullable = false)
     private CarModel carModel;
-
 
     public Long getId() {
         return id;

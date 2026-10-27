@@ -11,6 +11,7 @@ import java.util.Optional;
 @Repository
 public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
+    //TODO: revisar
     @EntityGraph(attributePaths = "carModel")
     List<Vehicle> findAllByOrderByLicensePlateAsc();
 
@@ -18,6 +19,7 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
     boolean existsByLicensePlate(String licensePlate);
 
+    //TODO: revisar
     boolean existsByLicensePlateAndIdNot(String licensePlate, Long id);
 
     boolean existsByCarModelId(Long carModelId);

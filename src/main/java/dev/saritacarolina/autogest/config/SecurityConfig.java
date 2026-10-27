@@ -10,10 +10,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
+
 // Configura toda la seguridad de la aplicación: define los accesos por rol, encripta contraseñas y maneja el inicio/cierre de sesión.
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
 
     @Bean
     public PasswordEncoder passwordEncoder() {

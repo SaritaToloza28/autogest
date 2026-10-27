@@ -31,11 +31,10 @@ public class SparePart {
     @Column(name = "stock", nullable = false)
     private Integer stock = 0;
 
-    //Ruta relativa de la imagen (ej. /uploads/abc.jpg)
     @Column(name = "image_path", length = 255)
     private String imagePath;
 
-    //Tabla de rompimiento spare_part_car_model (RF-19), sin entidad propia
+    //Tabla de rompimiento spare_part_car_model
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "spare_part_car_model",
@@ -114,7 +113,6 @@ public class SparePart {
     }
 
     //Manda todos los repuestos a la misma sección del estante para que Java no los pierda de vista antes o después de guardarlos.
-    //Usa SparePart.class y no getClass() para que el proxy de Hibernate dé el mismo valor que el objeto real.
     @Override
     public int hashCode() {
         return SparePart.class.hashCode();

@@ -10,7 +10,6 @@ import java.util.Optional;
 @Repository
 public interface AppUserRepository extends JpaRepository<AppUser, Long> {
 
-    //Listado ordenado para la tabla
     List<AppUser> findAllByOrderByFullNameAsc();
 
     Optional<AppUser> findByUsername(String username);

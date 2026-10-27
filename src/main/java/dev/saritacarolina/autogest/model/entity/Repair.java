@@ -26,7 +26,6 @@ public class Repair {
     @Column(name = "repair_date", nullable = false)
     private LocalDateTime repairDate;
 
-    //Motivo de la intervención
     @Column(name = "reason", nullable = false, length = 500)
     private String reason;
 

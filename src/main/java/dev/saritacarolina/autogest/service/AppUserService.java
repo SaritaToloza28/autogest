@@ -12,6 +12,7 @@ import java.util.List;
 @Service
 public class AppUserService {
 
+    //TODO: que es final?
     private static final int PASSWORD_MIN = 8;
     private static final int PASSWORD_MAX = 72;
 
@@ -51,6 +52,7 @@ public class AppUserService {
 
         this.repository.save(appUser);
 
+        //TODO: revisar lo que retorna
         return toDTO(appUser);
     }
 
@@ -67,18 +69,19 @@ public class AppUserService {
 
         boolean isCurrentUser = appUser.getUsername().equals(currentUsername);
 
-        //el usuario con sesión iniciada no puede cambiarse su username: la sesión seguiría con el nombre viejo
+        //el usuario con sesión iniciada no puede cambiarse su username
         if (isCurrentUser && !appUser.getUsername().equals(username)){
             throw new IllegalArgumentException("No puedes cambiar tu propio nombre de usuario");
         }
 
-        //ni su rol: así siempre queda al menos un administrador (el que hace el cambio)
+        //ni su rol: así siempre queda al menos un administrador
         if (isCurrentUser && appUser.getRole() != appUserRequest.role()){
             throw new IllegalArgumentException("No puedes cambiar tu propio rol");
         }
 
         setAttributesFromDTO(appUserRequest, appUser, username);
 
+        //TODO: no va en update?
         //al editar, contraseña vacía = se conserva la actual
         if (hasText(appUserRequest.password())){
             validatePassword(appUserRequest.password());
@@ -136,11 +139,14 @@ public class AppUserService {
         return new AppUserDTO(
                 appUser.getUsername(),
                 appUser.getFullName(),
+                //TODO: revisar
+
                 null,
                 appUser.getRole()
         );
     }
 
+    //Valida los datos
     private void validateRequest(AppUserDTO request){
         //usuario obligatorio
         if (!hasText(request.username())){

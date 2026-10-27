@@ -93,6 +93,7 @@ public class VehicleService {
         );
     }
 
+    //TODO: revisar lo de las placas
     private String normalizePlate(String rawPlate, PlateColor plateColor){
         String licensePlate = plateColor.normalize(rawPlate);
 
