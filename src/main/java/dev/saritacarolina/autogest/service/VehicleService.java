@@ -4,6 +4,7 @@ import dev.saritacarolina.autogest.model.constant.PlateColor;
 import dev.saritacarolina.autogest.model.dto.VehicleDTO;
 import dev.saritacarolina.autogest.model.entity.CarModel;
 import dev.saritacarolina.autogest.model.entity.Vehicle;
+import dev.saritacarolina.autogest.repository.RepairRepository;
 import dev.saritacarolina.autogest.repository.VehicleRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
@@ -15,10 +16,14 @@ public class VehicleService {
 
     private final VehicleRepository repository;
     private final CarModelService carModelService;
+    private final RepairRepository repairRepository;
 
-    public VehicleService(VehicleRepository repository, CarModelService carModelService) {
+    public VehicleService(VehicleRepository repository,
+                          CarModelService carModelService,
+                          RepairRepository repairRepository) {
         this.repository = repository;
         this.carModelService = carModelService;
+        this.repairRepository = repairRepository;
     }
 
     public List<Vehicle> findAllVehicles(){
@@ -74,10 +79,14 @@ public class VehicleService {
         return toDTO(vehicle);
     }
 
-    public void deleteVehicle(Long vehicleId) throws EntityNotFoundException {
+    public void deleteVehicle(Long vehicleId) throws EntityNotFoundException, IllegalArgumentException {
         Vehicle vehicle = findVehicleById(vehicleId);
 
-        //TODO: bloquear si tiene reparaciones (RepairRepository.existsByVehicleId)
+        //no se puede borrar si tiene reparaciones registradas
+        if (this.repairRepository.existsByVehicleId(vehicleId)){
+            throw new IllegalArgumentException("No se puede eliminar: el vehículo tiene reparaciones registradas");
+        }
+
         this.repository.delete(vehicle);
     }
 

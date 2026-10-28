@@ -25,6 +25,9 @@ public interface SparePartRepository extends JpaRepository<SparePart, Long> {
 
     boolean existsByCompatibleModelsId(Long carModelId);
 
+    //Repuestos que le sirven a un modelo (los que el mecánico puede usar en una reparación)
+    List<SparePart> findByCompatibleModelsIdOrderByNameAsc(Long carModelId);
+
     // Verifica directamente en la base de datos si un repuesto ya se usó en alguna reparación, ahorrando memoria al devolver solo true o false.
     @Query("SELECT COUNT(r) > 0 FROM Repair r JOIN r.usedParts p WHERE KEY(p).id = :sparePartId")
     boolean isUsedInRepairs(@Param("sparePartId") Long sparePartId);

@@ -1,0 +1,9 @@
+<th:block th:if="${repair != null}">
+    <form th:replace="~{repairs/list :: form}"></form>
+</th:block>
+
+<th:block th:if="${repairs != null}">
+    <table th:replace="~{repairs/list :: table}"></table>
+</th:block>
+
+<div th:replace="~{fragments/toast :: toast}"></div>

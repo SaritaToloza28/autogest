@@ -77,3 +77,23 @@ INSERT INTO app_user (username, password, full_name, role) VALUES
                                                                ('mecanico2', '$2a$10$h7F6WQdb2FA2PymGNI7SmezyD3BQyaKfOiaVMyQeOMt.ZxiRADWc2', 'Diana Torres', 'MECHANIC'),
                                                                ('operador1', '$2a$10$625Vo1aPNVsBgziAF0szlOEheXbrCTy/L8QFa4pWJ4mUZ7G8gg/r6', 'Sofía Herrera', 'OPERATOR'),
                                                                ('operador2', '$2a$10$kpW2sUmgBwQ2VmMT7KBlC.GpJFLMCHOvhPkKWpVEm5QyUY9oaQjQS', 'Julián Castro', 'OPERATOR');
+
+-- Reparaciones de ejemplo: una pendiente, una en progreso y una entregada (a domicilio)
+INSERT INTO repair (repair_date, reason, status, service_type, latitude, longitude, vehicle_id, mechanic_id) VALUES
+    ('2026-10-20 09:30:00', 'Revisión de frenos: ruido al frenar', 'PENDING', 'SERVICE_INTERNAL', NULL, NULL,
+     (SELECT id FROM vehicle WHERE license_plate = 'ABC-123'), (SELECT id FROM app_user WHERE username = 'mecanico1')),
+    ('2026-10-18 14:00:00', 'Cambio de bujías', 'IN_PROGRESS', 'SERVICE_INTERNAL', NULL, NULL,
+     (SELECT id FROM vehicle WHERE license_plate = 'JKL-456'), (SELECT id FROM app_user WHERE username = 'mecanico1')),
+    ('2026-10-10 08:00:00', 'Cambio de filtro de aire', 'DELIVERED', 'SERVICE_EXTERNAL', 4.711000, -74.072100,
+     (SELECT id FROM vehicle WHERE license_plate = 'TPU-321'), (SELECT id FROM app_user WHERE username = 'mecanico2'));
+
+-- Repuestos usados (compatibles con el modelo de cada vehículo)
+INSERT INTO repair_spare_part (repair_id, spare_part_id, quantity) VALUES
+    ((SELECT r.id FROM repair r JOIN vehicle v ON r.vehicle_id = v.id WHERE v.license_plate = 'JKL-456'),
+     (SELECT id FROM spare_part WHERE ean_code = '7701234000035'), 4),
+    ((SELECT r.id FROM repair r JOIN vehicle v ON r.vehicle_id = v.id WHERE v.license_plate = 'TPU-321'),
+     (SELECT id FROM spare_part WHERE ean_code = '7701234000042'), 1);
+
+-- Se descuenta del stock lo que se usó, igual que hace la app
+UPDATE spare_part SET stock = stock - 4 WHERE ean_code = '7701234000035';
+UPDATE spare_part SET stock = stock - 1 WHERE ean_code = '7701234000042';

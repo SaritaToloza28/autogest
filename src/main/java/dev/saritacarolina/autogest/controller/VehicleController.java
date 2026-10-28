@@ -91,7 +91,7 @@ public class VehicleController {
             service.deleteVehicle(vehicleId);
             model.addAttribute("vehicles", service.findAllVehicles());
             return toast(model, "success", "Vehículo eliminado");
-        } catch (EntityNotFoundException e) {
+        } catch (IllegalArgumentException | EntityNotFoundException e) {
             model.addAttribute("vehicles", service.findAllVehicles());
             return toast(model, "error", e.getMessage());
         }

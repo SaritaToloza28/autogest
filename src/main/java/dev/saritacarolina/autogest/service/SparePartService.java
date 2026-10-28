@@ -35,6 +35,10 @@ public class SparePartService {
         return this.repository.findAllByOrderByNameAsc();
     }
 
+    public List<SparePart> findCompatibleSpareParts(Long carModelId){
+        return this.repository.findByCompatibleModelsIdOrderByNameAsc(carModelId);
+    }
+
     public SparePart findSparePartById(Long sparePartId) throws EntityNotFoundException {
         return this.repository.findWithCompatibleModelsById(sparePartId)
                 .orElseThrow(() -> new EntityNotFoundException("Repuesto con id " + sparePartId + " no encontrado"));

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mis reparaciones | Autogest</title>
+    <link rel="stylesheet" href="../../static/css/styles.css" th:href="@{/css/styles.css}">
+    <script src="../../static/js/htmx.min.js" th:src="@{/js/htmx.min.js}"></script>
+</head>
+<body hx-headers='{"X-CSRF-TOKEN": "estatico"}'
+      th:hx-headers="|{&quot;${_csrf.headerName}&quot;: &quot;${_csrf.token}&quot;}|">
+
+<div id="toast-container"></div>
+
+<main class="container">
+    <div class="actions">
+        <a class="btn" href="../account/change-password.html" th:href="@{/account/password}">Cambiar mi contraseña</a>
+        <form method="post" action="/logout" th:action="@{/logout}">
+            <button type="submit" class="btn">Cerrar sesión</button>
+        </form>
+    </div>
+
+    <h1>Mis reparaciones</h1>
+
+    <div id="assigned-list" th:fragment="list" hx-swap-oob="true">
+
+        <p class="card empty" th:if="${#lists.isEmpty(repairs)}">No tienes reparaciones asignadas</p>
+
+        <section class="card" th:each="r : ${repairs}">
+            <h2>
+                <span class="plate plate-COLOR_YELLOW"
+                      th:classappend="${'plate-' + r.vehicle.plateColor}"
+                      th:text="${r.vehicle.licensePlate}">ABC-123</span>
+                <span th:text="|${r.vehicle.carModel.brand} ${r.vehicle.carModel.name}|">Mazda 3</span>
+                <span class="tag" th:text="${r.status.label}">En progreso</span>
+            </h2>
+
+            <p><strong>Motivo:</strong> <span th:text="${r.reason}">Cambio de bujías</span></p>
+            <p>
+                <strong>Servicio:</strong> <span th:text="${r.serviceType.label}">En el taller</span>
+                <span th:if="${r.latitude != null}"
+                      th:text="|(${r.latitude}, ${r.longitude})|">(4.711000, -74.072100)</span>
+            </p>
+            <p><strong>Fecha:</strong> <span th:text="${#temporals.format(r.repairDate, 'dd/MM/yyyy HH:mm')}">18/10/2026 14:00</span></p>
+            <p><strong>Mecánico:</strong> <span th:text="${r.mechanic.fullName}">Carlos Ramírez</span></p>
+
+            <!-- Repuestos usados -->
+            <p th:if="${!#maps.isEmpty(r.usedParts)}"><strong>Repuestos usados:</strong></p>
+            <div class="actions" th:each="p : ${r.usedParts}">
+                <span class="tag" th:text="|${p.key.name} x${p.value}|">Bujía de iridio x4</span>
+
+                <button type="button" class="btn btn-danger" th:if="${r.status.name() == 'IN_PROGRESS'}"
+                        hx-delete="/repairs/assigned/1/parts/1"
+                        th:hx-delete="@{/repairs/assigned/{id}/parts/{partId}(id=${r.id}, partId=${p.key.id})}"
+                        hx-swap="none"
+                        th:hx-confirm="|¿Quitar ${p.key.name}? La cantidad vuelve al stock.|">Quitar</button>
+            </div>
+
+            <!-- Registrar repuesto: solo en progreso y solo los compatibles con el vehículo -->
+            <form class="form-grid" th:if="${r.status.name() == 'IN_PROGRESS'}"
+                  hx-post="/repairs/assigned/1/parts"
+                  th:hx-post="@{/repairs/assigned/{id}/parts(id=${r.id})}"
+                  hx-swap="none">
+                <div class="field">
+                    <label th:for="|sparePartId-${r.id}|" for="sparePartId-1">Repuesto compatible</label>
+                    <select id="sparePartId-1" th:id="|sparePartId-${r.id}|" name="sparePartId" required>
+                        <option value=""
+                                th:text="${#lists.isEmpty(compatibleParts.get(r.id))} ? 'No hay repuestos compatibles' : 'Seleccione…'">Seleccione…</option>
+                        <option th:each="sp : ${compatibleParts.get(r.id)}"
+                                value="1"
+                                th:value="${sp.id}"
+                                th:disabled="${sp.stock == 0}"
+                                th:text="|${sp.name} (stock: ${sp.stock})|">Bujía de iridio (stock: 36)</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label th:for="|quantity-${r.id}|" for="quantity-1">Cantidad</label>
+                    <input id="quantity-1" th:id="|quantity-${r.id}|" type="number" name="quantity"
+                           min="1" step="1" value="1" required>
+                </div>
+
+                <div class="actions">
+                    <button type="submit" class="btn">Agregar repuesto</button>
+                </div>
+            </form>
+
+            <!-- Cambios de estado del mecánico -->
+            <div class="actions">
+                <button type="button" class="btn btn-primary" th:if="${r.status.name() == 'PENDING'}"
+                        hx-post="/repairs/assigned/1/start"
+                        th:hx-post="@{/repairs/assigned/{id}/start(id=${r.id})}"
+                        hx-swap="none">Iniciar reparación</button>
+
+                <button type="button" class="btn btn-primary" th:if="${r.status.name() == 'IN_PROGRESS'}"
+                        hx-post="/repairs/assigned/1/complete"
+                        th:hx-post="@{/repairs/assigned/{id}/complete(id=${r.id})}"
+                        hx-swap="none"
+                        hx-confirm="¿Marcar la reparación como completada? Ya no podrás agregar repuestos.">Terminar reparación</button>
+            </div>
+        </section>
+    </div>
+</main>
+
+</body>
+</html>

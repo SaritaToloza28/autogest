@@ -1,8 +1,10 @@
 package dev.saritacarolina.autogest.service;
 
+import dev.saritacarolina.autogest.model.constant.Role;
 import dev.saritacarolina.autogest.model.dto.AppUserDTO;
 import dev.saritacarolina.autogest.model.entity.AppUser;
 import dev.saritacarolina.autogest.repository.AppUserRepository;
+import dev.saritacarolina.autogest.repository.RepairRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,14 +19,22 @@ public class AppUserService {
 
     private final AppUserRepository repository;
     private final PasswordEncoder passwordEncoder;
+    private final RepairRepository repairRepository;
 
-    public AppUserService(AppUserRepository repository, PasswordEncoder passwordEncoder) {
+    public AppUserService(AppUserRepository repository,
+                          PasswordEncoder passwordEncoder,
+                          RepairRepository repairRepository) {
         this.repository = repository;
         this.passwordEncoder = passwordEncoder;
+        this.repairRepository = repairRepository;
     }
 
     public List<AppUser> findAllAppUsers(){
         return this.repository.findAllByOrderByFullNameAsc();
+    }
+
+    public List<AppUser> findAllMechanics(){
+        return this.repository.findByRoleOrderByFullNameAsc(Role.MECHANIC);
     }
 
     public AppUser findAppUserById(Long appUserId) throws EntityNotFoundException {
@@ -78,6 +88,12 @@ public class AppUserService {
             throw new IllegalArgumentException("No puedes cambiar tu propio rol");
         }
 
+        //un mecánico con reparaciones no puede dejar de ser mecánico: sus reparaciones quedarían sin responsable
+        if (appUser.getRole() == Role.MECHANIC && appUserRequest.role() != Role.MECHANIC
+                && this.repairRepository.existsByMechanicId(appUserId)){
+            throw new IllegalArgumentException("No se puede cambiar el rol: el mecánico tiene reparaciones asignadas");
+        }
+
         setAttributesFromDTO(appUserRequest, appUser, username);
 
         if (hasText(appUserRequest.password())){
@@ -95,6 +111,11 @@ public class AppUserService {
 
         if (appUser.getUsername().equals(currentUsername)){
             throw new IllegalArgumentException("No puedes eliminar tu propio usuario");
+        }
+
+        //no se puede borrar un mecánico que tiene reparaciones
+        if (this.repairRepository.existsByMechanicId(appUserId)){
+            throw new IllegalArgumentException("No se puede eliminar: el mecánico tiene reparaciones asignadas");
         }
 
         this.repository.delete(appUser);
