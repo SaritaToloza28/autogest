@@ -51,6 +51,13 @@
             </div>
 
             <div class="field">
+                <label for="ownerPhone">Celular del propietario</label>
+                <input id="ownerPhone" type="tel" name="ownerPhone" maxlength="16" required
+                       inputmode="numeric" placeholder="3001234567"
+                       value="" th:value="${vehicle.ownerPhone}">
+            </div>
+
+            <div class="field">
                 <label for="carModelId">Modelo</label>
                 <select id="carModelId" name="carModelId" required>
                     <option value=""
@@ -83,6 +90,7 @@
                 <th>Placa</th>
                 <th>Tipo</th>
                 <th>Propietario</th>
+                <th>Celular</th>
                 <th>Modelo</th>
                 <th>Acciones</th>
             </tr>
@@ -97,6 +105,7 @@
                 </td>
                 <td th:text="${v.plateColor.label}">Amarilla (particular)</td>
                 <td th:text="${v.ownerName}">Juan Pérez</td>
+                <td class="mono" th:text="${v.ownerPhone}">3001234567</td>
                 <td th:text="|${v.carModel.brand} ${v.carModel.name}|">Mazda 3</td>
                 <td class="actions">
                     <button type="button" class="btn"
@@ -118,6 +127,7 @@
                 <td><span class="plate plate-COLOR_BLUE">CD-1234</span></td>
                 <td>Azul (diplomático)</td>
                 <td>Embajada</td>
+                <td class="mono">3109876543</td>
                 <td>Toyota Prado</td>
                 <td class="actions">
                     <button type="button" class="btn">Editar</button>
@@ -126,7 +136,7 @@
             </tr>
 
             <tr th:if="${#lists.isEmpty(vehicles)}">
-                <td colspan="5" class="empty">No hay vehículos registrados</td>
+                <td colspan="6" class="empty">No hay vehículos registrados</td>
             </tr>
             </tbody>
         </table>

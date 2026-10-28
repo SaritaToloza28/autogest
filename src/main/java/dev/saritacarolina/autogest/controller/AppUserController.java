@@ -20,8 +20,6 @@ public class AppUserController {
         this.appUserService = appUserService;
     }
 
-    // ---------- Gestión de usuarios (ADMIN) ----------
-
     @GetMapping
     public String list(Model model) {
         model.addAttribute("appUser", emptyAppUser());
@@ -94,30 +92,6 @@ public class AppUserController {
             addToast(model, "error", e.getMessage());
         }
         return "users/response";
-    }
-
-    //TODO: cambiar esto de controlador
-    // ---------- Cambiar mi contraseña (todos los roles) ----------
-
-    @GetMapping("/account/password")
-    public String changePasswordPage() {
-        return "account/change-password";
-    }
-
-    @PostMapping("/account/password")
-    public String changePassword(@RequestParam String currentPassword,
-                                 @RequestParam String newPassword,
-                                 @RequestParam String confirmPassword,
-                                 Principal principal,
-                                 Model model) {
-        try {
-            appUserService.changePassword(principal.getName(), currentPassword, newPassword, confirmPassword);
-            model.addAttribute("clearForm", true);
-            addToast(model, "success", "Contraseña actualizada correctamente");
-        } catch (IllegalArgumentException | EntityNotFoundException e) {
-            addToast(model, "error", e.getMessage());
-        }
-        return "account/response";
     }
 
     // ---------- Auxiliares ----------

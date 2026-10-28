@@ -113,6 +113,6 @@ public class VehicleController {
     }
 
     private VehicleDTO emptyForm(){
-        return new VehicleDTO("", null, "", null);
+        return new VehicleDTO("", null, "", "", null);
     }
 }

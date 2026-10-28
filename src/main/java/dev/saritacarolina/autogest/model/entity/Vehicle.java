@@ -7,8 +7,6 @@ import jakarta.persistence.*;
 @Table(name = "vehicle")
 public class Vehicle {
 
-
-    //TODO: Añadir teléfono de contacto
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
@@ -23,6 +21,10 @@ public class Vehicle {
 
     @Column(name = "owner_name", nullable = false, length = 100)
     private String ownerName;
+
+    //Celular colombiano normalizado: 10 dígitos que empiezan por 3 (ej. 3001234567)
+    @Column(name = "owner_phone", nullable = false, length = 10)
+    private String ownerPhone;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "car_model_id", nullable = false)
@@ -54,6 +56,14 @@ public class Vehicle {
 
     public void setOwnerName(String ownerName) {
         this.ownerName = ownerName;
+    }
+
+    public String getOwnerPhone() {
+        return ownerPhone;
+    }
+
+    public void setOwnerPhone(String ownerPhone) {
+        this.ownerPhone = ownerPhone;
     }
 
     public CarModel getCarModel() {

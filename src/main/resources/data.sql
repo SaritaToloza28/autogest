@@ -59,12 +59,12 @@ INSERT INTO spare_part_car_model (spare_part_id, car_model_id)
 SELECT sp.id, cm.id FROM spare_part sp, car_model cm
 WHERE sp.ean_code = '7701234000103' AND cm.brand || ' ' || cm.name IN ('Mazda 3', 'Kia Picanto', 'Chevrolet Spark', 'Renault Logan');
 
-INSERT INTO vehicle (license_plate, plate_color, owner_name, car_model_id) VALUES
-                                                                               ('ABC-123', 'COLOR_YELLOW', 'Laura Gómez', (SELECT id FROM car_model WHERE brand = 'Mazda' AND name = '3')),
-                                                                               ('JKL-456', 'COLOR_YELLOW', 'Andrés Martínez', (SELECT id FROM car_model WHERE brand = 'Chevrolet' AND name = 'Spark')),
-                                                                               ('MNP-789', 'COLOR_YELLOW', 'Valentina Rojas', (SELECT id FROM car_model WHERE brand = 'Kia' AND name = 'Picanto')),
-                                                                               ('TPU-321', 'COLOR_WHITE', 'Transportes El Sol S.A.S.', (SELECT id FROM car_model WHERE brand = 'Renault' AND name = 'Logan')),
-                                                                               ('CD-1234', 'COLOR_BLUE', 'Embajada de Canadá', (SELECT id FROM car_model WHERE brand = 'Toyota' AND name = 'Corolla'));
+INSERT INTO vehicle (license_plate, plate_color, owner_name, owner_phone, car_model_id) VALUES
+                                                                               ('ABC-123', 'COLOR_YELLOW', 'Laura Gómez', '3001234567', (SELECT id FROM car_model WHERE brand = 'Mazda' AND name = '3')),
+                                                                               ('JKL-456', 'COLOR_YELLOW', 'Andrés Martínez', '3109876543', (SELECT id FROM car_model WHERE brand = 'Chevrolet' AND name = 'Spark')),
+                                                                               ('MNP-789', 'COLOR_YELLOW', 'Valentina Rojas', '3155550123', (SELECT id FROM car_model WHERE brand = 'Kia' AND name = 'Picanto')),
+                                                                               ('TPU-321', 'COLOR_WHITE', 'Transportes El Sol S.A.S.', '3204567890', (SELECT id FROM car_model WHERE brand = 'Renault' AND name = 'Logan')),
+                                                                               ('CD-1234', 'COLOR_BLUE', 'Embajada de Canadá', '3012223344', (SELECT id FROM car_model WHERE brand = 'Toyota' AND name = 'Corolla'));
 
 -- Usuarios de prueba (solo desarrollo). La contraseña se guarda como hash BCrypt.
 -- Contraseñas para iniciar sesión:

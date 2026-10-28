@@ -11,7 +11,7 @@ import java.util.Optional;
 @Repository
 public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
-    //TODO: revisar
+    // Trae todos los vehículos ordenados por placa e incluye la información de su modelo en una sola consulta SQL, así la relacion se LAZY
     @EntityGraph(attributePaths = "carModel")
     List<Vehicle> findAllByOrderByLicensePlateAsc();
 
@@ -19,7 +19,7 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
     boolean existsByLicensePlate(String licensePlate);
 
-    //TODO: revisar
+    // Valida que la placa no pertenezca a un vehículo distinto al actual.
     boolean existsByLicensePlateAndIdNot(String licensePlate, Long id);
 
     boolean existsByCarModelId(Long carModelId);

@@ -12,7 +12,6 @@ import java.util.List;
 @Service
 public class AppUserService {
 
-    //TODO: que es final?
     private static final int PASSWORD_MIN = 8;
     private static final int PASSWORD_MAX = 72;
 
@@ -52,7 +51,7 @@ public class AppUserService {
 
         this.repository.save(appUser);
 
-        //TODO: revisar lo que retorna
+        //devuelve un DTO diferente al request que refleja lo que realmente se guardó.
         return toDTO(appUser);
     }
 
@@ -81,8 +80,6 @@ public class AppUserService {
 
         setAttributesFromDTO(appUserRequest, appUser, username);
 
-        //TODO: no va en update?
-        //al editar, contraseña vacía = se conserva la actual
         if (hasText(appUserRequest.password())){
             validatePassword(appUserRequest.password());
             appUser.setPassword(this.passwordEncoder.encode(appUserRequest.password()));
@@ -139,8 +136,6 @@ public class AppUserService {
         return new AppUserDTO(
                 appUser.getUsername(),
                 appUser.getFullName(),
-                //TODO: revisar
-
                 null,
                 appUser.getRole()
         );

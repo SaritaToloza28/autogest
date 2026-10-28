@@ -117,9 +117,7 @@ public class CarModelService {
         }
     }
 
-
-    //TODO: revisar lógica
-    //Verifica que todos los modelos compatibles seleccionados si existan por medio de su id
+    //Verifica que todos los modelos de carros seleccionados si existan por medio de su id
     public Set<CarModel> findCarModelsByIds(Set<Long> carModelIds) throws EntityNotFoundException {
         List<CarModel> carModels = this.repository.findAllById(carModelIds);
 
