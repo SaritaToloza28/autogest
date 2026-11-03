@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Repuestos | Autogest</title>
+    <link rel="stylesheet" href="../../static/css/styles.css" th:href="@{/css/styles.css}">
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+</head>
+<body hx-headers='{"X-CSRF-TOKEN": "estatico"}'
+      th:hx-headers="|{&quot;${_csrf.headerName}&quot;: &quot;${_csrf.token}&quot;}|">
+
+<div id="toast-container"></div>
+
+<main class="container container-wide">
+    <h1>Repuestos</h1>
+
+    <form id="spare-part-form" class="card" th:fragment="form"
+          hx-post="/spare-parts"
+          th:hx-post="${sparePartId == null} ? @{/spare-parts} : @{/spare-parts/{id}(id=${sparePartId})}"
+          hx-encoding="multipart/form-data"
+          hx-target="this"
+          hx-swap="outerHTML">
+
+        <h2 th:text="${sparePartId == null} ? 'Nuevo repuesto' : 'Editar repuesto'">Nuevo repuesto</h2>
+
+        <div class="form-grid">
+            <div class="field">
+                <label for="name">Nombre</label>
+                <input id="name" type="text" name="name" maxlength="100" required
+                       value="" th:value="${sparePart.name}">
+            </div>
+
+            <div class="field">
+                <label for="eanCode">Código EAN-13</label>
+                <input id="eanCode" type="text" name="eanCode" inputmode="numeric"
+                       minlength="13" maxlength="13" pattern="\d{13}" required
+                       placeholder="4006381333931"
+                       value="" th:value="${sparePart.eanCode}">
+            </div>
+
+            <div class="field">
+                <label for="price">Precio</label>
+                <input id="price" type="number" name="price" min="0.01" step="0.01" required
+                       value="" th:value="${sparePart.price}">
+            </div>
+
+            <div class="field">
+                <label for="stock">Stock</label>
+                <input id="stock" type="number" name="stock" min="0" step="1" required
+                       value="0" th:value="${sparePart.stock}">
+            </div>
+
+            <div class="field field-full">
+                <label for="description">Descripción</label>
+                <textarea id="description" name="description" maxlength="500" rows="3"
+                          th:text="${sparePart.description}"></textarea>
+            </div>
+
+            <fieldset class="field field-full">
+                <legend>Modelos compatibles</legend>
+
+                <p class="empty" th:if="${#lists.isEmpty(carModels)}">No hay modelos registrados</p>
+
+                <div class="checkbox-grid">
+                    <label class="checkbox" th:each="m : ${carModels}">
+                        <input type="checkbox" name="compatibleModelIds"
+                               value="1"
+                               th:value="${m.id}"
+                               th:checked="${sparePart.compatibleModelIds != null
+                                             and #sets.contains(sparePart.compatibleModelIds, m.id)}">
+                        <span th:text="|${m.brand} ${m.name}|">Mazda 3</span>
+                    </label>
+                </div>
+            </fieldset>
+
+            <div class="field field-full" th:if="${sparePart.imagePath != null}">
+                <span>Imagen actual</span>
+                <img class="thumb-lg" alt="Imagen actual del repuesto"
+                     src="../../static/images/placeholder.png"
+                     th:src="@{${sparePart.imagePath}}">
+            </div>
+
+            <div class="field field-full">
+                <label for="image"
+                       th:text="${sparePartId == null} ? 'Imagen (opcional)' : 'Nueva imagen (déjala vacía para conservar la actual)'">Imagen (opcional)</label>
+                <input id="image" type="file" name="image" accept="image/jpeg,image/png,image/webp">
+            </div>
+        </div>
+
+        <div class="actions">
+            <button type="submit" class="btn btn-primary"
+                    th:text="${sparePartId == null} ? 'Guardar' : 'Actualizar'">Guardar</button>
+
+            <button type="button" class="btn" th:if="${sparePartId != null}"
+                    hx-get="/spare-parts/form"
+                    th:hx-get="@{/spare-parts/form}"
+                    hx-target="#spare-part-form"
+                    hx-swap="outerHTML">Cancelar</button>
+        </div>
+    </form>
+
+    <div class="table-wrap">
+        <table id="spare-part-table" class="card table" th:fragment="table" hx-swap-oob="true">
+            <thead>
+            <tr>
+                <th>Imagen</th>
+                <th>Nombre</th>
+                <th>EAN</th>
+                <th>Precio</th>
+                <th>Stock</th>
+                <th>Modelos</th>
+                <th>Acciones</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr th:each="p : ${spareParts}">
+                <td>
+                    <img class="thumb" th:if="${p.imagePath != null}" alt="Imagen del repuesto"
+                         src="../../static/images/placeholder.png"
+                         th:src="@{${p.imagePath}}">
+                    <span class="thumb thumb-empty" th:if="${p.imagePath == null}">—</span>
+                </td>
+                <td th:text="${p.name}">Filtro de aceite</td>
+                <td class="mono" th:text="${p.eanCode}">4006381333931</td>
+                <td th:text="|$ ${#numbers.formatDecimal(p.price, 1, 'POINT', 2, 'COMMA')}|">$ 25.000,00</td>
+                <td th:text="${p.stock}"
+                    th:classappend="${p.stock == 0} ? 'stock-empty'">12</td>
+                <td>
+                    <span class="tag" th:each="m : ${p.compatibleModels}"
+                          th:text="|${m.brand} ${m.name}|">Mazda 3</span>
+                </td>
+                <td class="actions">
+                    <button type="button" class="btn"
+                            hx-get="/spare-parts/1/edit"
+                            th:hx-get="@{/spare-parts/{id}/edit(id=${p.id})}"
+                            hx-target="#spare-part-form"
+                            hx-swap="outerHTML">Editar</button>
+
+                    <button type="button" class="btn btn-danger"
+                            hx-delete="/spare-parts/1"
+                            th:hx-delete="@{/spare-parts/{id}(id=${p.id})}"
+                            hx-swap="none"
+                            hx-confirm="¿Eliminar este repuesto?"
+                            th:hx-confirm="|¿Eliminar ${p.name}?|">Eliminar</button>
+                </td>
+            </tr>
+
+            <tr th:remove="all">
+                <td><span class="thumb thumb-empty">—</span></td>
+                <td>Pastillas de freno</td>
+                <td class="mono">7702001000012</td>
+                <td>$ 80.000,00</td>
+                <td class="stock-empty">0</td>
+                <td><span class="tag">Chevrolet Spark</span></td>
+                <td class="actions">
+                    <button type="button" class="btn">Editar</button>
+                    <button type="button" class="btn btn-danger">Eliminar</button>
+                </td>
+            </tr>
+
+            <tr th:if="${#lists.isEmpty(spareParts)}">
+                <td colspan="7" class="empty">No hay repuestos registrados</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+
+</body>
+</html>

@@ -1,0 +1,9 @@
+<!-- templates/fragments/toast.html -->
+<div th:fragment="toast" hx-swap-oob="beforeend:#toast-container" xmlns:th="http://www.w3.org/1999/xhtml">
+    <div class="toast"
+         th:classappend="${toastType == 'error'} ? 'toast-error' : 'toast-success'"
+         role="alert">
+        <strong th:text="${toastType == 'error'} ? 'Error' : 'Éxito'">Éxito</strong>
+        <span th:text="${toastMessage}">Operación realizada con éxito.</span>
+    </div>
+</div>

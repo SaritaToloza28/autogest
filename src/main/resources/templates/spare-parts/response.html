@@ -1,0 +1,9 @@
+<th:block th:if="${sparePart != null}">
+    <form th:replace="~{spare-parts/list :: form}"></form>
+</th:block>
+
+<th:block th:if="${spareParts != null}">
+    <table th:replace="~{spare-parts/list :: table}"></table>
+</th:block>
+
+<div th:replace="~{fragments/toast :: toast}"></div>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Modelos | Autogest</title>
+    <link rel="stylesheet" href="../../static/css/styles.css" th:href="@{/css/styles.css}">
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+</head>
+<body hx-headers='{"X-CSRF-TOKEN": "estatico"}'
+      th:hx-headers="|{&quot;${_csrf.headerName}&quot;: &quot;${_csrf.token}&quot;}|">
+
+<div id="toast-container"></div>
+
+<main class="container">
+    <h1>Modelos de vehículo</h1>
+
+    <form id="car-model-form" class="card" th:fragment="form"
+          hx-post="/car-models"
+          th:hx-post="${carModelId == null} ? @{/car-models}"
+          th:hx-put="${carModelId != null} ? @{/car-models/{id}(id=${carModelId})}"
+          hx-target="this"
+          hx-swap="outerHTML">
+
+        <h2 th:text="${carModelId == null} ? 'Nuevo modelo' : 'Editar modelo'">Nuevo modelo</h2>
+
+        <div class="field">
+            <label for="brand">Marca</label>
+            <input id="brand" type="text" name="brand" maxlength="60" required
+                   value="" th:value="${carModel.brand}">
+        </div>
+
+        <div class="field">
+            <label for="name">Modelo</label>
+            <input id="name" type="text" name="name" maxlength="60" required
+                   value="" th:value="${carModel.name}">
+        </div>
+
+        <div class="actions">
+            <button type="submit" class="btn btn-primary"
+                    th:text="${carModelId == null} ? 'Guardar' : 'Actualizar'">Guardar</button>
+
+            <button type="button" class="btn" th:if="${carModelId != null}"
+                    hx-get="/car-models/form"
+                    th:hx-get="@{/car-models/form}"
+                    hx-target="#car-model-form"
+                    hx-swap="outerHTML">Cancelar</button>
+        </div>
+    </form>
+
+    <table id="car-model-table" class="card table" th:fragment="table" hx-swap-oob="true">
+        <thead>
+        <tr>
+            <th>Marca</th>
+            <th>Modelo</th>
+            <th>Acciones</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr th:each="m : ${carModels}">
+            <td th:text="${m.brand}">Mazda</td>
+            <td th:text="${m.name}">3</td>
+            <td class="actions">
+                <button type="button" class="btn"
+                        hx-get="/car-models/1/edit"
+                        th:hx-get="@{/car-models/{id}/edit(id=${m.id})}"
+                        hx-target="#car-model-form"
+                        hx-swap="outerHTML">Editar</button>
+
+                <button type="button" class="btn btn-danger"
+                        hx-delete="/car-models/1"
+                        th:hx-delete="@{/car-models/{id}(id=${m.id})}"
+                        hx-swap="none"
+                        hx-confirm="¿Eliminar este modelo?"
+                        th:hx-confirm="|¿Eliminar ${m.brand} ${m.name}?|">Eliminar</button>
+            </td>
+        </tr>
+
+        <tr th:remove="all">
+            <td>Chevrolet</td>
+            <td>Spark</td>
+            <td class="actions">
+                <button type="button" class="btn">Editar</button>
+                <button type="button" class="btn btn-danger">Eliminar</button>
+            </td>
+        </tr>
+
+        <tr th:if="${#lists.isEmpty(carModels)}">
+            <td colspan="3" class="empty">No hay modelos registrados</td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+
+</body>
+</html>

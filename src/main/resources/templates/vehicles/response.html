@@ -1,0 +1,10 @@
+<th:block th:if="${vehicle != null}" xmlns:th="http://www.w3.org/1999/xhtml">
+    <form th:replace="~{vehicles/list :: form}"></form>
+</th:block>
+
+<!-- oob=true: la tabla llega con hx-swap-oob y HTMX la cambia en la página -->
+<th:block th:if="${vehicles != null}" th:with="oob=true">
+    <table th:replace="~{vehicles/list :: table}"></table>
+</th:block>
+
+<div th:replace="~{fragments/toast :: toast}"></div>

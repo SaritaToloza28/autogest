@@ -1,0 +1,166 @@
+<!-- templates/repairs/create.html
+     Fragmento del modal "Nueva orden". No lleva <html> ni <body>.
+     · Vista previa (Live Server): el dashboard lo carga con hx-get="create.html".
+     · Spring: GET /repairs/create debe devolver "repairs/create :: create-modal".
+
+     Cerrar = pedir un archivo vacío y meterlo en #modal-container (queda vacío).
+     Se cierra con la ✕, con "Cancelar", con clic en el fondo oscuro o con Escape. -->
+<div class="modal-overlay" id="modal-new-order" th:fragment="create-modal"
+
+     hx-trigger="click target:#modal-new-order, keyup[key=='Escape'] from:body"
+     hx-target="#modal-container"
+     hx-swap="delete" xmlns:th="http://www.w3.org/1999/xhtml">
+
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-new-order-title">
+
+        <div class="modal-header">
+            <h2>Nueva orden de servicio</h2>
+            <!-- TODO: (Backend) Cambiar a hx-get="/repairs/close-modal" cuando se integre con Spring Boot -->
+            <button type="button"
+                    class="btn-close-modal"
+                    hx-get=""
+                    hx-target="#modal-new-order"
+                    hx-swap="delete"
+                    aria-label="Cerrar modal">&times;</button>
+        </div>
+
+        <div class="modal-body">
+            <!-- Vista previa: GET a una fila de prueba (un archivo estático no acepta POST).
+                 Spring: th:hx-get="${null}" BORRA el hx-get y th:hx-post pone el POST real. -->
+            <form id="form-new-order"
+                  hx-post="/repairs"
+                  th:hx-post="@{/repairs}"
+                  hx-target="#orders-body"
+                  hx-swap="afterbegin">
+                <!-- 1. Reutilización del bloque completo de Vehículo y Propietario -->
+                <div th:replace="~{vehicles/fragments :: vehicle-fields}"></div>
+
+                <!-- 1. Datos del vehículo (RF-06 / RF-07) -->
+                <!-- Formulario con el apartado de VEHÍCULO idéntico a tu captura -->
+                <fieldset class="form-section">
+                    <legend><i data-lucide="car"></i> VEHÍCULO</legend>
+
+                    <!-- Fila 1: Placa, Color de placa y Vista Previa (3 columnas) -->
+                    <div class="form-row flex-3">
+                        <!-- 1. Campo de Placa -->
+                        <div class="field">
+                            <label for="plate">Placa *</label>
+                            <input type="text" id="plate" name="licensePlate" placeholder="RKV-326"
+                                   pattern="[A-Za-z]{3}-?[0-9]{3}" title="Formato ABC-123"
+                                   maxlength="7" style="text-transform: uppercase;"
+                                   required autofocus
+                                   oninput="document.getElementById('plate-preview').innerText = this.value.toUpperCase() || 'RKV 326'">
+                        </div>
+
+                        <!-- 2. Selector del Color Reglamentario de Placa (RF-06) -->
+                        <div class="field">
+                            <label for="plateColor">Color de placa *</label>
+                            <select id="plateColor" name="color" required>
+                                <option value="plate-yellow" selected>Amarillo (Particular)</option>
+                                <option value="plate-white">Blanco (Público)</option>
+                                <option value="plate-red">Rojo (Carga)</option>
+                                <option value="plate-blue">Azul (Diplomático)</option>
+                                <option value="plate-green">Verde (Remolque)</option>
+                            </select>
+                        </div>
+
+                        <!-- 3. Vista Previa de la Placa Colombiana -->
+                        <div class="field preview-field">
+                            <label>Vista previa</label>
+                            <div id="plate-preview" class="plate-badge plate-yellow inline-badge">
+                                RKV 326
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fila 2: Marca y Modelo con autocompletado (1 columna o ancho completo) -->
+                    <div class="form-row flex-1">
+                        <div class="field">
+                            <label for="carModelInput">Marca y modelo *</label>
+                            <input list="carModelsList" id="carModelInput" name="carModelName"
+                                   placeholder="Escribe para buscar (ej. Chevrolet Tracker)..." required>
+
+                            <datalist id="carModelsList">
+                                <option th:each="m : ${carModels}"
+                                        th:value="|${m.brand} ${m.name}|"
+                                        th:data-id="${m.id}"></option>
+                                <!-- Opciones para maquetación local estática -->
+                                <option value="Chevrolet Tracker"></option>
+                                <option value="Renault Duster"></option>
+                                <option value="Mazda 3"></option>
+                                <option value="Kia Picanto"></option>
+                                <option value="Toyota Corolla"></option>
+                            </datalist>
+                        </div>
+                    </div>
+
+                    <!-- Fila 3: Propietario y Celular integrados abajo (2 columnas simétricas) -->
+                    <div class="form-row flex-2">
+                        <div class="field">
+                            <label for="owner">Propietario *</label>
+                            <input type="text" id="owner" name="owner" placeholder="Valentina Castro" required>
+                        </div>
+
+                        <div class="field">
+                            <label for="clientPhone">Celular *</label>
+                            <input type="tel" id="clientPhone" name="clientPhone" placeholder="320 645 9812"
+                                   pattern="[0-9]{10}" title="Ingresa un número de 10 dígitos (ej. 3206459812)" required>
+                        </div>
+                    </div>
+                </fieldset>
+                <!-- 2. Trabajo técnico y asignación (RF-15) -->
+                <fieldset class="form-section">
+                    <legend>Servicio y asignación técnica</legend>
+
+                    <div class="field">
+                        <label for="reason">Motivo de ingreso / Falla reportada *</label>
+                        <textarea id="reason" name="description" rows="3"
+                                  placeholder="Mantenimiento preventivo. Revisar ruido en frenos." required></textarea>
+                    </div>
+
+                    <div class="form-row flex-2">
+                        <div class="field">
+                            <label for="mechanic">Mecánico asignado *</label>
+                            <select id="mechanic" name="mechanicId" required>
+                                <option value="">Selecciona un mecánico...</option>
+                                <option th:each="m : ${mechanics}"
+                                        th:value="${m.id}"
+                                        th:text="${m.fullName}" value="1">Julián Torres</option>
+                                <!-- Solo vista previa -->
+                                <option th:remove="all" value="2">Carlos Mejía</option>
+                                <option th:remove="all" value="3">Andrés Ruiz</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="serviceType">Ubicación de la atención *</label>
+                            <select id="serviceType" name="isExternal">
+                                <option value="false" selected>En taller (Sede Chapinero)</option>
+                                <option value="true">Asistencia externa / Carretera</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 3. Mapa: el CSS lo muestra solo si se elige "Asistencia externa" -->
+                    <div id="map-container" class="map-box">
+                        <p><small>Haga clic en el mapa para marcar el punto exacto de la asistencia:</small></p>
+                        <div id="modal-map"></div>
+                        <input type="hidden" name="latitude" id="lat">
+                        <input type="hidden" name="longitude" id="lng">
+                    </div>
+                </fieldset>
+
+                <!-- Pie del modal -->
+                <div class="modal-footer">
+                    <!--TODO: En hx-get (y th:hx-get para Thymeleaf) se coloca la ruta del Controller Java -->
+                    <button type="button"
+                            class="btn btn-outline"
+                            hx-get=""
+                            hx-target="#modal-container"
+                            hx-swap="delete">Cancelar</button>
+
+                    <button type="submit" class="btn btn-primary btn-submit">+ Crear orden</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

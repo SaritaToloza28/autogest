@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Iniciar sesión | Autogest</title>
+
+
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link rel="stylesheet"
+
+          href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=IBM+Plex+Sans:wght@400;500&display=swap">
+
+    <!-- 1. Importa variables de color, fuentes, botones y Toasts compartidos -->
+    <link rel="stylesheet" th:href="@{/css/base.css}" href="../../static/css/base.css">
+
+    <!-- href = respaldo para abrir el archivo sin Spring; th:href lo reemplaza con Thymeleaf -->
+
+    <link rel="stylesheet" href="../../static/css/login.css" th:href="@{/css/login.css}">
+
+</head>
+
+<body class="auth-page">
+
+
+
+<!-- Escena 3D de fondo: el carro gira en la mitad derecha (en móvil, arriba).
+
+data-car le dice a login-3d.js dónde está el modelo. -->
+
+<canvas id="bg-canvas" aria-hidden="true"
+
+        data-car="../../static/models/car/scene.gltf"
+
+        th:data-car="@{/models/car/scene.gltf}"></canvas>
+
+
+
+<!-- Estado de la escena 3D: "Cargando…" o el motivo si algo falla. Se oculta al cargar el carro. -->
+
+<p id="scene-status" class="scene-status" aria-hidden="true">Cargando modelo 3D…</p>
+
+
+
+<!-- Notificaciones flotantes (Toast) -->
+
+<div id="toast-container" role="status" aria-live="polite">
+
+    <div class="toast toast-error" role="alert" th:if="${param.error}">Usuario o contraseña incorrectos</div>
+
+    <div class="toast toast-success" th:if="${param.logout}">Sesión cerrada correctamente</div>
+
+</div>
+
+
+
+<div class="auth-shell">
+
+    <main class="auth-card">
+
+
+
+        <!-- Engranajes decorativos (un solo símbolo reutilizado, color #AE9DCC) -->
+
+        <svg class="gears" viewBox="0 0 400 560" preserveAspectRatio="xMidYMid slice"
+
+             xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+
+            <defs>
+
+                <symbol id="gear" viewBox="0 0 200 200">
+
+                    <g fill="#AE9DCC">
+
+                        <!-- Anillo con hueco central -->
+
+                        <circle cx="100" cy="100" r="62" fill="none" stroke="#AE9DCC" stroke-width="26"/>
+
+                        <!-- 12 dientes -->
+
+                        <rect x="87" y="14" width="26" height="36" rx="3"/>
+
+                        <rect x="87" y="14" width="26" height="36" rx="3" transform="rotate(30 100 100)"/>
+
+                        <rect x="87" y="14" width="26" height="36" rx="3" transform="rotate(60 100 100)"/>
+
+                        <rect x="87" y="14" width="26" height="36" rx="3" transform="rotate(90 100 100)"/>
+
+                        <rect x="87" y="14" width="26" height="36" rx="3" transform="rotate(120 100 100)"/>
+
+                        <rect x="87" y="14" width="26" height="36" rx="3" transform="rotate(150 100 100)"/>
+
+                        <rect x="87" y="14" width="26" height="36" rx="3" transform="rotate(180 100 100)"/>
+
+                        <rect x="87" y="14" width="26" height="36" rx="3" transform="rotate(210 100 100)"/>
+
+                        <rect x="87" y="14" width="26" height="36" rx="3" transform="rotate(240 100 100)"/>
+
+                        <rect x="87" y="14" width="26" height="36" rx="3" transform="rotate(270 100 100)"/>
+
+                        <rect x="87" y="14" width="26" height="36" rx="3" transform="rotate(300 100 100)"/>
+
+                        <rect x="87" y="14" width="26" height="36" rx="3" transform="rotate(330 100 100)"/>
+
+                    </g>
+
+                </symbol>
+
+            </defs>
+
+
+
+            <g opacity="0.32">
+
+                <!-- Grande arriba-izquierda (detrás del título) -->
+
+                <use href="#gear" x="40" y="-40" width="230" height="230" transform="rotate(10 155 75)"/>
+
+                <!-- Pequeño arriba-derecha -->
+
+                <use href="#gear" x="255" y="10" width="120" height="120" transform="rotate(-8 315 70)"/>
+
+                <!-- Muy pequeño, solo contorno fino -->
+
+                <use href="#gear" x="318" y="115" width="80" height="80" opacity="0.8"/>
+
+                <!-- Grande central -->
+
+                <use href="#gear" x="80" y="140" width="300" height="300" transform="rotate(-12 230 290)"/>
+
+                <!-- Mediano derecha -->
+
+                <use href="#gear" x="320" y="215" width="130" height="130"/>
+
+                <!-- Mediano izquierda -->
+
+                <use href="#gear" x="-5" y="300" width="140" height="140" transform="rotate(15 65 370)"/>
+
+                <!-- Grande abajo-derecha -->
+
+                <use href="#gear" x="220" y="380" width="260" height="260" transform="rotate(8 350 510)"/>
+
+                <!-- Abajo-izquierda -->
+
+                <use href="#gear" x="-60" y="430" width="230" height="230" transform="rotate(-10 55 545)"/>
+
+                <!-- Pequeño inferior -->
+
+                <use href="#gear" x="100" y="500" width="90" height="90"/>
+
+            </g>
+
+        </svg>
+
+
+
+        <div class="auth-content">
+
+            <h2 class="brand">Bienvenido de vuelta</h2>
+
+            <div class="user-avatar-header">
+
+                <div class="avatar-circle">
+
+                    <!-- Icono vectorial SVG de la silueta de usuario en tono lavanda/morado -->
+
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#8034D2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+
+                        <circle cx="12" cy="7" r="4"></circle>
+
+                    </svg>
+
+                </div>
+
+
+
+            </div>
+
+            <p class="subtitle">Ingresa con tu usuario</p>
+
+
+
+            <!-- th:action agrega automáticamente el token CSRF de Spring Security -->
+
+            <form id="login-form" method="post" novalidate
+
+                  th:action="@{/login}"
+
+                  th:hx-post="@{/login}"
+
+                  hx-target="#toast-container"
+
+                  hx-swap="innerHTML"
+
+                  hx-disabled-elt="find button[type=submit]">
+
+
+
+                <div class="field">
+
+                    <label for="username">Usuario</label>
+
+                    <input id="username" type="text" name="username" maxlength="50"
+
+                           required autocomplete="username" autofocus>
+
+                </div>
+
+
+
+                <div class="field">
+
+                    <label for="password">Contraseña</label>
+
+                    <input id="password" type="password" name="password"
+
+                           required autocomplete="current-password">
+
+                </div>
+
+
+
+                <button type="submit" class="btn-submit">
+
+                    <span class="btn-label">Ingresar</span>
+
+                </button>
+
+            </form>
+
+
+
+            <a href="#" th:href="@{/}" class="link-back">Volver al inicio</a>
+
+        </div>
+
+    </main>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+
+</html>
+

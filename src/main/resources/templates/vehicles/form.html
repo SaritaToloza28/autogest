@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<!--
+    Nueva orden de reparación (RF-15).
+    1) Verifica que la placa exista (GET /vehicles/lookup?mode=check)
+    2) Fecha, motivo y mecánico asignado
+    3) Si es servicio externo (domicilio / carretera) → pin en el mapa (lat/lng)
+
+    POST /repairs  → repairs/response.html (form limpio + tabla oob + toast)
+    Modelo: repair (licensePlate, date, description, mechanicId, latitude, longitude),
+            mechanics (id, fullName).
+    Comportamiento: static/js/repair-form.js · Mapa: static/js/map.js
+-->
+<body>
+
+<form id="repair-form" th:fragment="form" novalidate
+      hx-post="/repairs" th:hx-post="@{/repairs}"
+      hx-target="this" hx-swap="outerHTML"
+      data-close-on-success
+      data-repair-form>
+
+    <div class="modal-header">
+        <span class="modal-header-icon"><i data-lucide="clipboard-plus"></i></span>
+        <div>
+            <h2>Nueva orden de reparación</h2>
+            <p>Verifica el vehículo, describe el motivo y asigna un mecánico.</p>
+        </div>
+        <button type="button" class="icon-btn" data-modal-close aria-label="Cerrar"><i data-lucide="x"></i></button>
+    </div>
+
+    <div class="modal-body">
+        <div class="form-grid">
+            <!-- 1. Vehículo -->
+            <div class="field">
+                <label for="rf-licensePlate">Placa del vehículo</label>
+                <input id="rf-licensePlate" type="text" name="licensePlate" required maxlength="7"
+                       placeholder="ABC-123" autocomplete="off" data-plate-input
+                       value="" th:value="${repair?.licensePlate}"
+                       hx-get="/vehicles/lookup" th:hx-get="@{/vehicles/lookup}"
+                       hx-vals='{"mode": "check"}'
+                       hx-trigger="input[Autogest.plate.isValid(this.value)] changed delay:350ms, plate:check"
+                       hx-target="#rf-vehicle-check" hx-swap="innerHTML" hx-sync="this:replace">
+                <div id="rf-vehicle-check" class="vehicle-check-slot" aria-live="polite"></div>
+            </div>
+
+            <div class="field">
+                <label for="rf-date">Fecha de ingreso</label>
+                <input id="rf-date" type="datetime-local" name="date" required data-default-now
+                       value="" th:value="${repair?.date != null} ? |${#temporals.format(repair.date, 'yyyy-MM-dd')}T${#temporals.format(repair.date, 'HH:mm')}|">
+            </div>
+
+            <!-- 2. Responsable -->
+            <div class="field field-full">
+                <label for="rf-mechanicId">Mecánico asignado</label>
+                <select id="rf-mechanicId" name="mechanicId" required>
+                    <option value="">Selecciona quién atenderá la orden…</option>
+                    <option th:each="m : ${mechanics}" value="1"
+                            th:value="${m.id}" th:text="${m.fullName}"
+                            th:selected="${m.id == repair?.mechanicId}">Carlos Ramírez</option>
+                    <option value="2" th:remove="all">Diana Torres</option>
+                </select>
+            </div>
+
+            <!-- 3. Tipo de servicio -->
+            <fieldset class="field field-full">
+                <legend class="field-label">¿Dónde se atiende?</legend>
+                <div class="segmented segmented--block" role="radiogroup">
+                    <input type="radio" id="rf-type-internal" name="serviceType" value="INTERNAL"
+                           data-service-type checked th:checked="${repair?.latitude == null}">
+                    <label for="rf-type-internal"><i data-lucide="warehouse"></i> En el taller</label>
+                    <input type="radio" id="rf-type-external" name="serviceType" value="EXTERNAL"
+                           data-service-type th:checked="${repair?.latitude != null}">
+                    <label for="rf-type-external"><i data-lucide="map-pin"></i> Domicilio o carretera</label>
+                </div>
+            </fieldset>
+
+            <div class="field field-full" data-external-only hidden>
+                <span class="field-label">Ubicación del servicio</span>
+                <div class="map map--picker" data-map-picker
+                     data-lat-input="#rf-latitude" data-lng-input="#rf-longitude"
+                     role="application" aria-label="Mapa: haz clic para marcar la ubicación"></div>
+                <div class="coords">
+                    <span>Lat <output data-coord="lat">—</output></span>
+                    <span>Lng <output data-coord="lng">—</output></span>
+                    <button type="button" class="btn-link" data-locate><i data-lucide="locate-fixed"></i> Usar mi ubicación</button>
+                </div>
+                <span class="field-hint">Haz clic en el mapa o arrastra el pin hasta el punto exacto.</span>
+                <input type="hidden" id="rf-latitude" name="latitude" disabled
+                       value="" th:value="${repair?.latitude}">
+                <input type="hidden" id="rf-longitude" name="longitude" disabled
+                       value="" th:value="${repair?.longitude}">
+            </div>
+
+            <!-- 4. Motivo -->
+            <div class="field field-full">
+                <label for="rf-description">Motivo de la intervención</label>
+                <textarea id="rf-description" name="description" required maxlength="1000" rows="3"
+                          placeholder="Ej.: ruido metálico en frenos delanteros al detenerse; testigo de ABS encendido."
+                          th:text="${repair?.description}"></textarea>
+            </div>
+        </div>
+
+        <input type="hidden" name="status" value="IN_PROGRESS">
+        <p class="field-error" role="alert" th:if="${formError != null}" th:text="${formError}"></p>
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-modal-close>Cancelar</button>
+        <button type="submit" class="btn btn-primary">
+            <i data-lucide="check"></i> Crear orden
+        </button>
+    </div>
+</form>
+
+</body>
+</html>

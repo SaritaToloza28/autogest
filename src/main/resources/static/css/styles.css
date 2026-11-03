@@ -1,0 +1,848 @@
+/* =========================================================
+   AUTOGEST · styles.css
+   Paleta:
+   --lavender  #AE9DCC  (acentos suaves, textos sobre fondo oscuro)
+   --muted     #6E5799  (textos secundarios, iconos)
+   --tint      #E9DDFF  (fondos suaves, seleccion)
+   --primary   #8034D2  (accion principal, activos)
+   --ink       #170933  (sidebar, titulos)
+   ========================================================= */
+
+:root {
+    --lavender: #AE9DCC;
+    --muted: #6E5799;
+    --tint: #E9DDFF;
+    --primary: #8034D2;
+    --primary-dark: #6a24b8;
+    --ink: #170933;
+
+    --bg: #faf8ff;
+    --surface: #ffffff;
+    --border: #e6dcf6;
+    --border-soft: #f0eaf9;
+    --row-selected: #f3ecff;
+
+    --radius: 12px;
+    --shadow-sm: 0 1px 2px rgba(23, 9, 51, 0.04);
+    --shadow-md: 0 8px 24px rgba(23, 9, 51, 0.10);
+    --sidebar-w: 256px;
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+h1, h2, p { margin: 0; }
+small { color: var(--muted); font-size: 0.78rem; }
+
+[data-lucide] {
+    width: 18px;
+    height: 18px;
+    stroke-width: 1.8;
+    flex-shrink: 0;
+}
+
+/* =========================================================
+   LAYOUT PRINCIPAL (RESPONSIVE PC & ULTRAWIDE)
+   ========================================================= */
+.app-shell {
+    display: flex;
+    min-height: 100vh;
+    background-color: var(--bg);
+}
+
+/* Contenido Principal: Limita el ancho horizontal y lo centra en pantallas muy anchas */
+.main-content {
+    --gutter: clamp(1.5rem, 2.5vw, 4rem);
+    flex: 1;
+    min-width: 0;
+    padding: 0 var(--gutter) 2.5rem;
+}
+
+/* =========================================================
+   SIDEBAR (CORREGIDO PARA CAPAS DE ENGRANAJES Y CONTENIDO)
+   ========================================================= */
+.sidebar {
+    width: var(--sidebar-w);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem 1rem 1rem;
+    background: linear-gradient(180deg, #1d0c40 0%, var(--ink) 55%);
+    color: var(--lavender);
+    overflow: hidden;
+    isolation: isolate; /* Aísla el contexto de apilamiento para los engranajes */
+}
+
+/* Capa de Engranajes de Fondo */
+.sidebar .gears,
+.gears {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;          /* Queda detrás de todo el contenido interactivo */
+    pointer-events: none; /* Previene bloqueo de clics en el menú */
+    opacity: 0.15;
+}
+
+/* Capa de Contenido por Encima */
+.sidebar .brand,
+.sidebar .workspace-chip,
+.sidebar-section-title,
+.sidebar .menu,
+.sidebar .sidebar-bottom,
+.sidebar .user-profile-footer,
+.sidebar .help-link {
+    position: relative;
+    z-index: 1;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0 0.5rem 1.4rem;
+}
+.brand-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    background: linear-gradient(135deg, var(--primary), #a35be8);
+    box-shadow: 0 4px 12px rgba(128, 52, 210, 0.45);
+}
+.brand-icon [data-lucide] { width: 18px; height: 18px; }
+.brand-name {
+    font-size: 1.45rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: #fff;
+}
+
+.workspace-chip {
+    margin: 0 0 1.4rem;
+    padding: 0.7rem 0.85rem;
+    border-radius: 10px;
+    background: rgba(233, 221, 255, 0.06);
+    border: 1px solid rgba(174, 157, 204, 0.16);
+}
+.workspace-chip strong {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--tint);
+}
+.workspace-chip small { color: var(--lavender); opacity: 0.8; }
+
+.sidebar-section-title {
+    padding: 0 0.85rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+}
+
+.menu {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.menu-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.62rem 0.85rem;
+    border-radius: 9px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--lavender);
+    transition: background 0.18s ease, color 0.18s ease;
+}
+.menu-item [data-lucide] { color: var(--muted); transition: color 0.18s ease; }
+.menu-item:hover {
+    background: rgba(233, 221, 255, 0.07);
+    color: #fff;
+}
+.menu-item:hover [data-lucide] { color: var(--lavender); }
+/* .active lo pone Thymeleaf; las rutas .html solo coinciden en la vista previa */
+.menu-item.active,
+.page-orders .menu-item[href$="repairs/dashboard.html"],
+.page-vehicles .menu-item[href$="vehicles/list.html"] {
+    background: rgba(128, 52, 210, 0.28);
+    color: #fff;
+}
+.menu-item.active [data-lucide],
+.page-orders .menu-item[href$="repairs/dashboard.html"] [data-lucide],
+.page-vehicles .menu-item[href$="vehicles/list.html"] [data-lucide] { color: var(--tint); }
+.menu-item.active::before,
+.page-orders .menu-item[href$="repairs/dashboard.html"]::before,
+.page-vehicles .menu-item[href$="vehicles/list.html"]::before {
+    content: '';
+    position: absolute;
+    left: -1rem;
+    top: 20%;
+    bottom: 20%;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--primary);
+    box-shadow: 0 0 10px var(--primary);
+}
+
+.sidebar-bottom { margin-top: auto; }
+.help-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.62rem 0.85rem;
+    border-radius: 9px;
+    font-size: 0.88rem;
+    color: var(--muted);
+}
+.help-link:hover { color: var(--lavender); background: rgba(233, 221, 255, 0.05); }
+
+.user-profile-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin-top: 0.75rem;
+    padding: 0.9rem 0.5rem 0;
+    border-top: 1px solid rgba(174, 157, 204, 0.16);
+}
+.avatar-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--ink);
+    background: linear-gradient(135deg, var(--tint), var(--lavender));
+}
+.user-info { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
+.user-info strong {
+    font-size: 0.85rem;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.user-info small { color: var(--lavender); opacity: 0.75; }
+
+/* =========================================================
+   HEADER SUPERIOR
+   ========================================================= */
+.top-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 72px;
+    margin: 0 -2.5rem;
+    padding: 0 2.5rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+}
+.breadcrumbs { font-size: 0.88rem; color: var(--muted); }
+.breadcrumbs strong { color: var(--ink); font-weight: 600; }
+.breadcrumbs span { margin-right: 0.35rem; }
+
+.welcome-msg {
+    font-size: 0.95rem;
+    color: var(--muted);
+}
+.welcome-msg strong {
+    color: var(--ink);
+    font-weight: 600;
+}
+
+.header-right { display: flex; align-items: center; gap: 1.25rem; }
+.header-status {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.78rem;
+    color: var(--muted);
+}
+.status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+}
+.icon-btn {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.18s ease, color 0.18s ease;
+}
+.icon-btn:hover { background: var(--tint); color: var(--primary); }
+
+/* ---------- Titulo de pagina ---------- */
+.page-title-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 2rem 0 0.5rem;
+}
+.subtitle {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--primary);
+}
+.page-title-section h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+}
+.page-title-section p {
+    margin-top: 0.4rem;
+    font-size: 0.92rem;
+    color: var(--muted);
+}
+
+/* ---------- Botones ---------- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.05rem;
+    border-radius: 9px;
+    border: 1px solid transparent;
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.18s ease, border-color 0.18s ease,
+                box-shadow 0.18s ease, transform 0.18s ease;
+}
+.btn-primary {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(128, 52, 210, 0.32);
+}
+.btn-primary:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(128, 52, 210, 0.38);
+}
+.btn-outline {
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--ink);
+}
+.btn-outline:hover { border-color: var(--lavender); background: var(--bg); }
+.btn-outline [data-lucide] { color: var(--muted); }
+.btn-sm { padding: 0.45rem 0.85rem; font-size: 0.82rem; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.btn-link {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--primary);
+    cursor: pointer;
+}
+.btn-link:hover { color: var(--primary-dark); text-decoration: underline; }
+
+/* ---------- Tarjetas base ---------- */
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+}
+
+/* =========================================================
+   KPI / SECCIÓN DE MÉTRICAS (Fondo blanco por defecto, activo en lavanda)
+   ========================================================= */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+.kpi-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.3rem;
+    background: var(--surface);       /* Fondo blanco por defecto */
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+.kpi-card:hover {
+    border-color: var(--lavender);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+.kpi-card.active {
+    background: var(--tint);          /* Lavanda tenue únicamente cuando se activa el filtro */
+    border-color: var(--primary);
+}
+.kpi-label { font-size: 0.85rem; font-weight: 500; color: var(--muted); }
+.kpi-card.active .kpi-label { color: var(--primary-dark); }
+.kpi-value {
+    font-size: 1.9rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+}
+.kpi-card.active .kpi-value { color: var(--primary); }
+
+/* =========================================================
+   TABLA PRINCIPAL DE ÓRDENES Y ACCIONES
+   ========================================================= */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: var(--radius);
+    background: var(--surface);
+    border: 1px solid var(--border);
+}
+
+.table-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.search-box {
+    flex: 0 1 360px;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--bg);
+    color: var(--muted);
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.search-box:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(128, 52, 210, 0.14);
+    background: #fff;
+}
+
+.search-box input {
+    flex: 1;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 0.87rem;
+    color: var(--ink);
+}
+
+.search-box input::placeholder { color: var(--lavender); }
+
+.filter-buttons {
+    display: flex;
+    gap: 0.6rem;
+}
+
+.custom-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.custom-table th {
+    padding: 0.8rem 1.25rem;
+    text-align: left;
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+}
+
+.custom-table td {
+    padding: 0.85rem 1.25rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--border-soft);
+    line-height: 1.4;
+}
+
+.custom-table tbody tr {
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.custom-table tbody tr:hover {
+    background: var(--bg);
+}
+
+.custom-table tbody tr.row-selected {
+    background-color: var(--row-selected) !important;
+}
+
+.custom-table tbody tr.row-selected td:first-child {
+    box-shadow: inset 4px 0 0 var(--primary);
+}
+
+.custom-table td [data-lucide] { color: var(--lavender); }
+.custom-table tr:hover td [data-lucide] { color: var(--primary); }
+
+.order-id { color: var(--primary); font-weight: 600; }
+
+/* ---------- Celdas Editables (Doble Clic) ---------- */
+.editable {
+    cursor: text;
+    border-radius: 6px;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.editable:hover {
+    background-color: #ffffff;
+    box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.editable input,
+.editable select {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    padding: 0.35rem 0.5rem;
+    font: inherit;
+    font-size: 0.85rem;
+    color: var(--ink);
+    background: #ffffff;
+    border: 1px solid var(--primary);
+    border-radius: 6px;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(128, 52, 210, 0.18);
+}
+
+.table-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.pagination { display: flex; align-items: center; gap: 0.35rem; }
+
+.page-num {
+    min-width: 32px;
+    padding: 0.4rem 0.6rem;
+    border-radius: 8px;
+    text-align: center;
+    color: var(--muted);
+}
+
+.page-num:hover { background: var(--tint); }
+.page-num.current { background: var(--tint); color: var(--primary); font-weight: 700; }
+
+/* ---------- Placa colombiana ---------- */
+.plate-badge {
+    display: inline-block;
+    margin-bottom: 2px;
+    padding: 3px 9px;
+    border-radius: 5px;
+    border: 1.5px solid var(--ink);
+    font-weight: 800;
+    font-size: 0.88rem;
+    letter-spacing: 0.06em;
+    text-align: center;
+    line-height: 1.3;
+    box-shadow: 0 1px 0 rgba(23, 9, 51, 0.25);
+    white-space: nowrap;
+}
+.plate-yellow, .plate-COLOR_YELLOW { background: #facc15; color: #000; }
+.plate-white,  .plate-COLOR_WHITE  { background: #ffffff; color: #000; }
+.plate-red,    .plate-COLOR_RED    { background: #dc2626; color: #fff; }
+.plate-blue,   .plate-COLOR_BLUE   { background: #1d4ed8; color: #fff; }
+.plate-green,  .plate-COLOR_GREEN  { background: #15803d; color: #fff; }
+
+.inline-badge { margin: 0; font-size: 1rem; padding: 4px 11px; }
+
+/* ---------- Badges de estado ---------- */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+.badge-purple { background: var(--tint);  color: var(--primary-dark); }
+.badge-indigo { background: #ddd5f3;      color: #3d2a73; }
+.badge-amber  { background: #fef3c7;      color: #92600a; }
+.badge-green  { background: #dcfce7;      color: #166534; }
+.badge-gray   { background: #efeaf6;      color: var(--muted); }
+
+/* ---------- Detalle de orden ---------- */
+.detail-card { margin-top: 1.5rem; }
+.detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+}
+.detail-title { display: flex; align-items: center; gap: 0.9rem; }
+.detail-title h2 { font-size: 1.2rem; font-weight: 600; }
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 1.4fr 1fr;
+    gap: 2rem;
+    padding: 1.4rem 1.5rem 1.6rem;
+}
+.detail-grid > div { display: flex; flex-direction: column; gap: 0.35rem; }
+.detail-label {
+    margin-bottom: 0.3rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--lavender);
+}
+.detail-grid strong { font-size: 0.98rem; font-weight: 600; color: var(--ink); }
+.detail-grid p { font-size: 0.86rem; color: var(--muted); }
+.detail-grid span.phone {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.3rem;
+    font-size: 0.9rem;
+    color: var(--ink);
+}
+.detail-grid .phone [data-lucide] { color: var(--primary); width: 16px; height: 16px; }
+
+/* Contenedor del mapa Leaflet (inyección HTMX) */
+#detail-map:empty { display: none; }
+#detail-map {
+    height: 280px;
+    margin: 0 1.5rem 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* ---------- Pie de pagina ---------- */
+.sync-note {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    font-size: 0.78rem;
+    color: var(--muted);
+}
+.sync-note [data-lucide] { width: 15px; height: 15px; color: var(--primary); }
+
+/* ---------- Toast (Alertas Flotantes) ---------- */
+#toast-container {
+    position: fixed;
+    right: 1.75rem;
+    bottom: 1.75rem;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+.toast {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.8rem;
+    min-width: 320px;
+    padding: 0.95rem 1.1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+}
+.toast-icon { color: #16a34a; }
+.toast strong { display: block; font-size: 0.88rem; }
+.toast small { display: block; margin-top: 2px; }
+.toast-close {
+    margin-left: auto;
+    border: 0;
+    background: none;
+    color: var(--lavender);
+    cursor: pointer;
+}
+.toast-close:hover { color: var(--ink); }
+
+/* =========================================================
+   ADAPTACIONES RESPONSIVE (PANTALLAS MEDIANAS Y MÓVILES)
+   ========================================================= */
+@media (max-width: 1100px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .detail-grid { grid-template-columns: 1fr; gap: 1.25rem; }
+    .table-container { overflow-x: auto; }
+    .custom-table { min-width: 850px; }
+}
+
+@media (max-width: 800px) {
+    .sidebar { display: none; }
+    .main-content { --gutter: 1rem; padding-bottom: 1.5rem; }
+    .page-title-section { flex-direction: column; }
+    .table-actions { flex-direction: column; align-items: stretch; }
+    .search-box { flex-basis: auto; }
+}
+
+/* =========================================================
+   PANTALLAS MUY ANCHAS (monitores grandes o zoom alejado)
+   ========================================================= */
+@media (min-width: 2000px) {
+    .main-content {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(380px, 1fr);
+        column-gap: 1.5rem;
+        align-content: start;
+    }
+    .main-content > * { grid-column: 1 / -1; }      /* header, título y KPIs a todo el ancho */
+    .main-content > .table-container { grid-column: 1; }
+    .main-content > .detail-card {
+        grid-column: 2;
+        margin-top: 0;
+        align-self: start;
+        position: sticky;
+        top: 1.5rem;
+    }
+    .detail-grid { grid-template-columns: 1fr; gap: 1.25rem; }
+}
+/* =========================================================
+   VISTA PREVIA POR ROL (solo sin Spring)
+   Spring borra el atributo sec:authorize al procesar la página,
+   así que estas reglas solo actúan en la vista estática.
+   Clase en <body>: preview-operator | preview-mechanic | preview-admin
+   ========================================================= */
+.preview-operator [sec\:authorize*="MECHANIC"],
+.preview-operator [sec\:authorize*="ADMINISTRATOR"],
+.preview-mechanic [sec\:authorize*="OPERATOR"],
+.preview-mechanic [sec\:authorize*="ADMINISTRATOR"],
+.preview-admin    [sec\:authorize*="OPERATOR"],
+.preview-admin    [sec\:authorize*="MECHANIC"] {
+    display: none;
+}
+
+/* =========================================================
+   RECEPCIÓN VEHICULAR (vehicles/list.html)
+   Reutiliza .card, .field, .btn, .custom-table y .plate-badge
+   ========================================================= */
+.form-card {
+    margin: 1.5rem 0;
+    padding: 1.25rem 1.25rem 1.1rem;
+    scroll-margin-top: 1.5rem;          /* el ancla #vehicle-form no queda pegada arriba */
+}
+.form-card-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+.form-card-header h2 { font-size: 1.05rem; font-weight: 600; }
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+}
+.form-card .field { margin-bottom: 0; }
+.form-card .field label { font-size: 0.85rem; font-weight: 600; }
+.form-card .field :is(input, select) { padding: 0.62rem 0.8rem; font-size: 0.9rem; }
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 1.1rem;
+}
+
+/* hidden siempre gana (lo usa la maqueta para ocultar cosas que Spring muestra) */
+[hidden] { display: none !important; }
+
+.uppercase { text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* Tabla de vehículos */
+.vehicles-table .custom-table { min-width: 820px; }
+.vehicles-table .owner { font-weight: 500; }
+.row-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.4rem;
+}
+.btn-danger-soft {
+    background: transparent;
+    border-color: transparent;
+    color: #C2255C;
+}
+.btn-danger-soft:hover { background: #fde8ef; border-color: #f6c6d6; }
+
+.empty-row td {
+    padding: 2.5rem 1.25rem;
+    text-align: center;
+    color: var(--muted);
+}
+
+/* Texto solo para lectores de pantalla */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+    .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .form-card-header { flex-direction: column; gap: 0.25rem; }
+}

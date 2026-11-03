@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Órdenes de servicio | Autogest</title>
+
+    <!-- Fuentes del login (Chakra Petch + IBM Plex Sans) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+    <!-- Solo las hojas compartidas: base.css (login) + styles.css (panel) -->
+    <link rel="stylesheet" href="../../static/css/base.css" th:href="@{/css/base.css}">
+    <link rel="stylesheet" href="../../static/css/styles.css" th:href="@{/css/styles.css}">
+
+</head>
+
+<!-- Token CSRF para las peticiones HTMX (edición en la tabla) -->
+<!-- preview-operator: en la vista previa muestra solo el menú del operador -->
+<body class="dashboard-body preview-operator"
+      hx-headers='{"X-CSRF-TOKEN": "estatico"}'
+      th:hx-headers="|{&quot;${_csrf.headerName}&quot;: &quot;${_csrf.token}&quot;}|">
+
+<!-- Notificaciones Toast del CRUD -->
+<div id="toast-container" role="status" aria-live="polite"></div>
+
+<!-- page-orders: marca la opción activa del menú en la vista previa -->
+<div class="app-shell page-orders">
+
+    <!-- ========================= SIDEBAR =========================
+         Con Spring: th:replace pone aquí fragments/sidebar.html con la opción
+         "orders" activa y solo los enlaces del rol con sesión.
+         Sin Spring (vista previa): HTMX carga el mismo archivo al abrir la página. -->
+    <aside class="sidebar"
+           th:replace="~{fragments/sidebar :: sidebar('orders')}"
+           hx-get="../fragments/sidebar.html"
+           hx-select=".sidebar"
+           hx-trigger="load"
+           hx-swap="outerHTML"></aside>
+
+    <!-- ========================= CONTENIDO ========================= -->
+    <main id="main-content" class="main-content">
+
+        <header class="top-header">
+            <nav class="welcome-msg" aria-label="Ruta">
+                <!-- Mensaje de bienvenida dinámico con Spring Security -->
+                <span class="welcome-msg">
+                    ¡Bienvenid@, <strong sec:authentication="name">Laura Rodríguez</strong>!
+                </span>
+            </nav>
+            <div class="header-right">
+
+
+                <button type="button"
+                        class="btn btn-primary btn-submit"
+                        hx-get="create.html"
+                        th:hx-get="@{/repairs/create}"
+                        hx-target="#modal-container"
+                        hx-swap="innerHTML">
+                    <i data-lucide="plus"></i> Nueva orden
+                </button>
+            </div>
+        </header>
+
+        <section class="page-title-section">
+            <div>
+                <span class="subtitle">RECEPCIÓN Y SEGUIMIENTO</span>
+                <h1>Órdenes de servicio</h1>
+                <p>Recibe vehículos, asigna responsables y mantén a tus clientes al día.</p>
+            </div>
+        </section>
+
+        <!-- ========================= KPIs ========================= -->
+        <section class="kpi-grid" aria-label="Resumen de órdenes">
+            <a href="#" th:href="@{/repairs/dashboard}" class="kpi-card active">
+                <span class="kpi-label">Todas las órdenes</span>
+                <span class="kpi-value" th:text="${stats?.total}">24</span>
+            </a>
+            <a href="#" th:href="@{/repairs/dashboard(status='IN_PROGRESS')}" class="kpi-card active">
+                <span class="kpi-label">En proceso</span>
+                <span class="kpi-value" th:text="${stats?.inProgress}">12</span>
+            </a>
+            <a th:href="@{/repairs/dashboard(isExternal=true)}"
+               class="kpi-card active"
+               th:classappend="${isExternal == true} ? 'active' : ''">
+                <span class="kpi-label">Asistencia externa</span>
+                <span class="kpi-value" th:text="${stats?.externalCount}">3</span>
+            </a>
+            <a href="#" th:href="@{/repairs/dashboard(status='COMPLETED')}" class="kpi-card active">
+                <span class="kpi-label">Terminada</span>
+                <span class="kpi-value" th:text="${stats?.completed}">6</span>
+            </a>
+        </section>
+
+        <!-- ========================= TABLA ========================= -->
+        <section class="table-container card" aria-label="Órdenes de servicio">
+
+            <div class="table-actions">
+                <!-- RF-07: buscar por placa (ABC-123) o cliente -->
+                <label class="search-box">
+                    <i data-lucide="search"></i>
+                    <input type="search" name="q" autocomplete="off"
+                           placeholder="Buscar por placa (ABC-123) o cliente"
+                           aria-label="Buscar por placa o cliente"
+                           hx-get="/repairs/search" th:hx-get="@{/repairs/search}"
+                           hx-trigger="keyup changed delay:300ms, search"
+                           hx-target="#orders-body"
+                           hx-swap="innerHTML">
+                </label>
+                <small><i data-lucide="pencil"></i> Doble clic en una celda para editarla</small>
+            </div>
+
+            <table class="custom-table">
+                <thead>
+                <tr>
+                    <th scope="col">Orden</th>
+                    <th scope="col">Vehículo</th>
+                    <th scope="col">Cliente</th>
+                    <th scope="col">Servicio</th>
+                    <th scope="col">Responsable</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col">Entrega estimada</th>
+                    <th scope="col"><span hidden>Detalle</span></th>
+                </tr>
+                </thead>
+
+                <!-- /repairs/search devuelve solo las filas de este tbody -->
+                <tbody id="orders-body" th:fragment="orders-rows">
+
+                <!-- FILA REAL DINÁMICA: Procesada por Spring Boot con los datos de data.sql -->
+                <tr th:each="o : ${orders}"
+                    class="row-selected" th:class="${o.id == selectedId} ? 'row-selected' : null"
+                    hx-get="/repairs/248/detail" th:hx-get="@{/repairs/{id}/detail(id=${o.id})}"
+                    hx-target="#order-detail" hx-swap="outerHTML">
+                    <td>
+                        <strong class="order-id" th:text="|#${#numbers.formatInteger(o.id, 4)}|">#0248</strong><br>
+                        <small th:text="${#temporals.format(o.date, 'dd MMM')}">23 oct.</small>
+                    </td>
+                    <td>
+                        <div class="plate-badge plate-yellow"
+                             th:classappend="|plate-${o.vehicle.plateColor}|"
+                             th:text="${#strings.replace(o.vehicle.licensePlate, '-', ' ')}">KTR 482</div><br>
+                        <small th:text="|${o.vehicle.carModel.brand} ${o.vehicle.carModel.name}|">Renault Duster</small>
+                    </td>
+                    <td class="editable" title="Doble clic para editar"
+                        hx-get="/repairs/248/edit/client" th:hx-get="@{/repairs/{id}/edit/client(id=${o.id})}"
+                        hx-trigger="dblclick" hx-target="this" hx-swap="innerHTML">
+                        <span th:text="${o.vehicle.ownerName}">María Fernanda Rojas</span><br>
+                        <small th:text="${o.clientPhone}">310 456 7823</small>
+                    </td>
+                    <td class="editable" title="Doble clic para editar"
+                        hx-get="/repairs/248/edit/service" th:hx-get="@{/repairs/{id}/edit/service(id=${o.id})}"
+                        hx-trigger="dblclick" hx-target="this" hx-swap="innerHTML"
+                        th:text="${o.serviceLabel}">Mantenimiento</td>
+                    <td class="editable" title="Doble clic para editar"
+                        hx-get="/repairs/248/edit/mechanic" th:hx-get="@{/repairs/{id}/edit/mechanic(id=${o.id})}"
+                        hx-trigger="dblclick" hx-target="this" hx-swap="innerHTML"
+                        th:text="${o.mechanic.fullName}">Carlos Mejía</td>
+                    <td>
+                        <span class="badge badge-purple"
+                              th:classappend="${o.status.name() == 'WAITING_PARTS'} ? 'badge-amber' : (${o.status.name() == 'READY'} ? 'badge-green' : '')"
+                              th:text="${o.statusLabel}">En proceso</span>
+                    </td>
+                    <td class="editable" title="Doble clic para editar"
+                        hx-get="/repairs/248/edit/delivery" th:hx-get="@{/repairs/{id}/edit/delivery(id=${o.id})}"
+                        hx-trigger="dblclick" hx-target="this" hx-swap="innerHTML"
+                        th:text="${#temporals.format(o.deliveryDate, 'dd MMM, hh:mm a')}">Hoy, 3:00 p. m.</td>
+                    <td><i data-lucide="chevron-right"></i></td>
+                </tr>
+
+                <!-- FILAS DE MOCKDATA: Solo visibles al maquetar en local. Spring Boot las elimina con th:remove="all" -->
+                <tr th:remove="all">
+                    <td><strong class="order-id">#0247</strong><br><small>23 oct.</small></td>
+                    <td><div class="plate-badge plate-yellow">JHW 915</div><br><small>Chevrolet Onix</small></td>
+                    <td class="editable">Diego Ramírez<br><small>315 208 4417</small></td>
+                    <td class="editable">Latonería</td>
+                    <td class="editable">Julián Torres</td>
+                    <td><span class="badge badge-purple">En proceso</span></td>
+                    <td class="editable">Hoy, 4:30 p. m.</td>
+                    <td><i data-lucide="chevron-right"></i></td>
+                </tr>
+                <tr th:remove="all">
+                    <td><strong class="order-id">#0246</strong><br><small>23 oct.</small></td>
+                    <td><div class="plate-badge plate-yellow">FPL 603</div><br><small>Mazda 3</small></td>
+                    <td class="editable">Camila Gómez<br><small>300 612 9084</small></td>
+                    <td class="editable">Motor</td>
+                    <td class="editable">Andrés Ruiz</td>
+                    <td><span class="badge badge-amber">Terminada</span></td>
+                    <td class="editable">24 oct., 11:00 a. m.</td>
+                    <td><i data-lucide="chevron-right"></i></td>
+                </tr>
+                </tbody>
+            </table>
+
+            <div class="table-footer">
+                <span th:text="|Mostrando ${#lists.size(orders)} órdenes|">Mostrando órdenes</span>
+                <nav class="pagination" aria-label="Paginación">
+                    <a href="#" class="page-num current" aria-current="page">1</a>
+                    <a href="#" class="page-num">2</a>
+                    <a href="#" class="page-num">3</a>
+                </nav>
+            </div>
+        </section>
+
+        <!-- ================= DETALLE DE LA ORDEN (RF-15 / RF-16) ================= -->
+        <section id="order-detail" class="detail-card card" th:fragment="order-detail"
+                 aria-labelledby="detail-title">
+            <div class="detail-header">
+                <div class="detail-title">
+                    <h2 id="detail-title" th:text="|Orden #${#numbers.formatInteger(detail.id, 4)}|">Orden #0248</h2>
+                    <div class="plate-badge plate-yellow inline-badge"
+                         th:classappend="|plate-${detail.vehicle.plateColor}|"
+                         th:text="${#strings.replace(detail.vehicle.licensePlate, '-', ' ')}">KTR 482</div>
+                    <span class="badge badge-purple" th:text="${detail.statusLabel}">En proceso</span>
+                </div>
+                <a href="#" class="btn btn-outline btn-sm"
+                   th:if="${detail.latitude != null}"
+                   th:href="@{/repairs/{id}/map(id=${detail.id})}"
+                   hx-get="/repairs/248/map" th:hx-get="@{/repairs/{id}/map(id=${detail.id})}"
+                   hx-target="#detail-map" hx-swap="innerHTML">
+                    <i data-lucide="map-pin"></i> Ver ubicación en el mapa
+                </a>
+            </div>
+
+            <div class="detail-grid">
+                <div>
+                    <span class="detail-label">CLIENTE Y VEHÍCULO</span>
+                    <strong th:text="${detail.vehicle.ownerName}">María Fernanda Rojas</strong>
+                    <p th:text="|${detail.vehicle.carModel.brand} ${detail.vehicle.carModel.name}|">Renault Duster · 2020</p>
+                    <span class="phone"><i data-lucide="phone"></i>
+                        <span th:text="${detail.clientPhone}">310 456 7823</span></span>
+                </div>
+                <div>
+                    <span class="detail-label">TRABAJO EN CURSO</span>
+                    <strong th:text="${detail.description}">Frenos y mantenimiento preventivo</strong>
+                    <p th:text="|${detail.mechanic.fullName} · Entrega ${#temporals.format(detail.deliveryDate, 'dd MMM, hh:mm a')}|">
+                        Carlos Mejía · Entrega hoy, 3:00 p. m.</p>
+                </div>
+                <div>
+                    <span class="detail-label">UBICACIÓN DEL SERVICIO</span>
+                    <strong th:text="${detail.latitude != null} ? 'Asistencia externa' : 'En el taller'">En el taller</strong>
+                    <p th:if="${detail.latitude != null}"
+                       th:text="|Lat ${detail.latitude} · Lng ${detail.longitude}|">Lat 4.65332 · Lng -74.08361</p>
+                </div>
+            </div>
+
+            <!-- HTMX inserta aquí el mapa Leaflet del servicio externo -->
+            <div id="detail-map"></div>
+        </section>
+
+    </main>
+</div>
+
+<!-- Contenedor para inyectar el Modal dinámico con HTMX -->
+<div id="modal-container"></div>
+
+<!-- Script de HTMX colocado al final del documento -->
+<script src="../../static/js/htmx.min.js" th:src="@{/js/htmx.min.js}"></script>
+</body>
+</html>

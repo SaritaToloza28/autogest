@@ -1,0 +1,582 @@
+/* ==========================================================
+   Autogest · Design System Global & Componentes Reutilizables
+   ========================================================== */
+
+/* ---------- 1. Variables de color, tipografía y placas ---------- */
+:root {
+    --bg: #F3EEF9;
+    --bg-2: #E9DDFF;
+    --neon: #8034D2;
+    --ink: #170933;
+    --ink-soft: #6E5799;
+    --edge: #AE9DCC;
+    --danger: #C2255C;
+    --ok: #0F8F6B;
+
+    --glass: rgba(255, 255, 255, .88);
+    --neon-ring: 0 0 0 3px rgba(128, 52, 210, .22);
+    --overlay: rgba(23, 9, 51, .45);
+
+    --font-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+    --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+
+    /* Placas colombianas: un solo lugar para los 5 colores */
+    --plate-yellow: #facc15;
+    --plate-white: #fff;
+    --plate-red: #dc2626;
+    --plate-blue: #1d4ed8;
+    --plate-green: #15803d;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+/* ---------- 2. Tipografía y marca ---------- */
+.brand {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.7rem;
+    line-height: 1.1;
+    color: var(--ink);
+}
+
+.subtitle {
+    margin: .5rem 0 1.1rem;
+    font-size: .95rem;
+    color: var(--ink-soft);
+}
+
+/* ---------- 3. Avatar de usuario ---------- */
+.user-avatar-header {
+    display: flex;
+    justify-content: center;
+    margin: .75rem 0 0;
+}
+
+.avatar-circle {
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #EAEAEA;
+    border-radius: 50%;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, .05);
+}
+
+.avatar-circle svg {
+    width: 30px;
+    height: 30px;
+}
+
+/* ---------- 3.1 Engranajes decorativos (login y dashboard) ----------
+   Login: <svg class="gears">  ·  Dashboard: <svg class="gears gears--soft"> */
+.gears {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    pointer-events: none;
+}
+
+.gears--soft { opacity: .08; }
+
+/* ---------- 4. Campos de formulario (login, panel y modales) ---------- */
+.field {
+    margin-bottom: 1.15rem;
+}
+
+.field label {
+    display: block;
+    margin-bottom: .4rem;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: .95rem;
+    color: var(--ink);
+}
+
+.field input,
+.field select,
+.field textarea {
+    width: 100%;
+    padding: .8rem .95rem;
+    font: inherit;
+    color: var(--ink);
+    background: #fff;
+    border: 1px solid var(--edge);
+    border-radius: 8px;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+}
+
+.field textarea { resize: vertical; }
+
+.field :is(input, select, textarea):hover {
+    border-color: var(--ink-soft);
+}
+
+.field :is(input, select, textarea):focus {
+    border-color: var(--neon);
+    box-shadow: var(--neon-ring);
+}
+
+/* Error solo después de que la persona escribió algo */
+.field :is(input, textarea):user-invalid {
+    border-color: var(--danger);
+}
+
+.field input:-webkit-autofill {
+    -webkit-text-fill-color: var(--ink);
+    -webkit-box-shadow: 0 0 0 1000px var(--bg) inset;
+}
+
+/* ---------- 5. Botones neón y spinner HTMX ---------- */
+.btn-submit {
+    position: relative;
+    width: 100%;
+    margin-top: .5rem;
+    padding: .9rem 1rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: .02em;
+    color: #fff;
+    background: var(--neon);
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 6px 22px rgba(128, 52, 210, .35);
+    transition: box-shadow .15s, filter .15s, transform .08s, opacity .15s;
+}
+
+.btn-submit:hover:not(:disabled) {
+    filter: brightness(1.08);
+    box-shadow: 0 8px 30px rgba(128, 52, 210, .55);
+}
+
+.btn-submit:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+.btn-submit:disabled {
+    cursor: progress;
+    filter: saturate(.7) brightness(.95);
+}
+
+.btn-submit:focus-visible,
+.link-back:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 3px;
+}
+
+/* Spinner mientras HTMX procesa la petición */
+.btn-submit::after {
+    content: "";
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    width: 1rem;
+    height: 1rem;
+    margin-top: -.5rem;
+    border: 2px solid rgba(255, 255, 255, .4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    opacity: 0;
+    animation: spin .7s linear infinite;
+    animation-play-state: paused;
+}
+
+.htmx-request .btn-submit {
+    opacity: .6;
+    pointer-events: none;
+}
+
+.htmx-request .btn-submit::after {
+    opacity: 1;
+    animation-play-state: running;
+}
+
+.link-back {
+    display: block;
+    margin-top: 1.5rem;
+    text-align: center;
+    color: var(--ink-soft);
+    text-underline-offset: 3px;
+    transition: color .15s;
+}
+
+.link-back:hover {
+    color: var(--neon);
+}
+
+/* ---------- 6. Toasts (se ocultan solos, sin JS) ---------- */
+#toast-container {
+    position: fixed;
+    top: 1.25rem;
+    right: 1.25rem;
+    z-index: 1100;                               /* por encima del modal */
+    display: grid;
+    gap: .6rem;
+    width: min(360px, calc(100vw - 2.5rem));
+    pointer-events: none;
+}
+
+.toast {
+    padding: .85rem 1rem;
+    font-size: .95rem;
+    color: var(--ink);
+    background: rgba(255, 255, 255, .96);
+    border: 1px solid var(--edge);
+    border-left: 4px solid var(--neon);
+    border-radius: 8px;
+    box-shadow: 0 12px 32px rgba(23, 9, 51, .16);
+    pointer-events: auto;
+    animation: toast-life 4s ease forwards;
+}
+
+.toast-error   { border-left-color: var(--danger); }
+.toast-success { border-left-color: var(--ok); }
+
+/* ---------- 7. Complementos del panel (dashboard) ---------- */
+.dashboard-body { font-family: var(--font-body); }
+.dashboard-body h1,
+.dashboard-body h2,
+.dashboard-body .brand-name,
+.dashboard-body .kpi-value,
+.dashboard-body .order-id { font-family: var(--font-display); }
+
+/* El sidebar recorta los engranajes y los mantiene detrás del menú */
+.sidebar { overflow: hidden; isolation: isolate; }
+
+/* Placa colombiana: siempre en una línea y con los 5 colores reglamentarios */
+.plate-badge { white-space: nowrap; }
+.plate-COLOR_YELLOW            { background: var(--plate-yellow); color: #000; }
+.plate-white, .plate-COLOR_WHITE { background: var(--plate-white);  color: #000; }
+.plate-red,   .plate-COLOR_RED   { background: var(--plate-red);    color: #fff; }
+.plate-blue,  .plate-COLOR_BLUE  { background: var(--plate-blue);   color: #fff; }
+.plate-green, .plate-COLOR_GREEN { background: var(--plate-green);  color: #fff; }
+
+/* Tabla editable: celda que se edita con doble clic */
+.editable { cursor: text; border-radius: 6px; }
+.editable:hover { background: #fff; box-shadow: inset 0 0 0 1px var(--edge); }
+.editable :is(input, select) {
+    width: 100%;
+    padding: .45rem .6rem;
+    font: inherit;
+    color: var(--ink);
+    background: #fff;
+    border: 1px solid var(--neon);
+    border-radius: 6px;
+    outline: none;
+    box-shadow: var(--neon-ring);
+}
+
+/* "Cerrar sesión" es un <button> (POST /logout) con aspecto de enlace */
+button.help-link {
+    width: 100%;
+    border: 0;
+    background: none;
+    font: inherit;
+    cursor: pointer;
+}
+
+/* Mapa del servicio externo en el detalle (se llena con HTMX) */
+#detail-map:empty { display: none; }
+#detail-map {
+    height: 280px;
+    margin: 0 1.5rem 1.5rem;
+    border: 1px solid var(--edge);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* ---------- 8. Modal (HTMX + <dialog> nativo, sin JS) ----------
+   Abrir: HTMX inserta el <dialog open> en #modal-container.
+   Cerrar: un botón de <form method="dialog"> quita el atributo open. */
+
+/* Bloquea el scroll de la página solo con un modal abierto */
+body:has(.modal-overlay[open]) { overflow: hidden; }
+
+/* Fondo: reinicia los estilos por defecto de <dialog> */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 16px;
+    border: 0;
+    color: var(--ink);
+    background: var(--overlay);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+/* Solo se muestra con [open]; cerrado, el navegador lo oculta */
+.modal-overlay[open] {
+    display: grid;
+    place-items: center;
+    animation: fade-in .2s ease-out;
+}
+
+/* Botón invisible que cubre el fondo: clic fuera de la tarjeta = cerrar */
+.modal-dismiss {
+    position: absolute;
+    inset: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: default;
+}
+
+/* Tarjeta (glassmorphism) */
+.modal-card {
+    position: relative;                          /* por encima de .modal-dismiss */
+    z-index: 1;
+    width: min(720px, 100%);
+    max-height: calc(100vh - 32px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--glass);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(128, 52, 210, .18);
+    border-radius: 18px;
+    box-shadow: 0 24px 64px rgba(23, 9, 51, .28);
+    animation: pop-in .22s ease-out;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 18px 24px;
+    border-bottom: 1px solid rgba(128, 52, 210, .12);
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.btn-close-modal {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--ink);
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+}
+
+.btn-close-modal:hover,
+.btn-close-modal:focus-visible {
+    background: rgba(128, 52, 210, .12);
+    color: var(--neon);
+    outline: none;
+}
+
+.modal-body {
+    padding: 20px 24px 24px;
+    overflow-y: auto;                            /* el contenido largo hace scroll aquí */
+}
+
+/* Los campos usan los estilos de la sección 4; aquí solo van más compactos */
+.modal-card .field { margin-bottom: 12px; }
+.modal-card .field label { font-size: .85rem; font-weight: 600; }
+.modal-card .field :is(input, select, textarea) { padding: 10px 12px; }
+
+.form-section {
+    margin: 0 0 18px;
+    padding: 16px;
+    border: 1px solid rgba(128, 52, 210, .15);
+    border-radius: 14px;
+    background: rgba(243, 238, 249, .55);       /* --bg translúcido */
+}
+
+.form-section legend {
+    padding: 0 6px;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: .85rem;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--neon);
+}
+
+.form-row { display: grid; gap: 14px; }
+.form-row.flex-2 { grid-template-columns: repeat(2, 1fr); }
+.form-row.flex-3 { grid-template-columns: repeat(3, 1fr); }
+
+/* Mapa: oculto en taller, visible en asistencia externa */
+.map-box { display: none; margin-top: 4px; }
+
+.form-section:has(#serviceType option[value="true"]:checked) .map-box {
+    display: block;
+    animation: fade-in .2s ease-out;
+}
+
+#modal-map {
+    height: 180px;
+    width: 100%;
+    border: 1px solid rgba(128, 52, 210, .2);
+    border-radius: 12px;
+    background: #E9E1F4;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 6px;
+}
+
+/* ---------- 9. Vista previa de la placa según el color elegido (:has) ----------
+   Acepta los valores del backend (COLOR_*) y los antiguos (AMARILLO / plate-yellow). */
+.form-section:has(#plateColor :is([value="COLOR_YELLOW"], [value="AMARILLO"], [value="plate-yellow"]):checked) #plate-preview {
+    background-color: var(--plate-yellow);
+    color: #000;
+}
+
+.form-section:has(#plateColor :is([value="COLOR_WHITE"], [value="BLANCO"], [value="plate-white"]):checked) #plate-preview {
+    background-color: var(--plate-white);
+    color: #000;
+    border-color: #000;
+}
+
+.form-section:has(#plateColor :is([value="COLOR_RED"], [value="ROJO"], [value="plate-red"]):checked) #plate-preview {
+    background-color: var(--plate-red);
+    color: #fff;
+}
+
+.form-section:has(#plateColor :is([value="COLOR_BLUE"], [value="AZUL"], [value="plate-blue"]):checked) #plate-preview {
+    background-color: var(--plate-blue);
+    color: #fff;
+}
+
+.form-section:has(#plateColor :is([value="COLOR_GREEN"], [value="VERDE"], [value="plate-green"]):checked) #plate-preview {
+    background-color: var(--plate-green);
+    color: #fff;
+}
+
+/* ---------- 10. Animaciones ---------- */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes pop-in {
+    from { opacity: 0; transform: translateY(14px) scale(.98); }
+    to   { opacity: 1; transform: none; }
+}
+
+@keyframes toast-life {
+    0%   { opacity: 0; transform: translateX(16px); }
+    8%   { opacity: 1; transform: none; }
+    85%  { opacity: 1; }
+    100% { opacity: 0; visibility: hidden; }
+}
+
+/* ---------- 11. Responsive y accesibilidad ---------- */
+@media (max-width: 640px) {
+    .modal-overlay { padding: 0; }
+    .modal-overlay[open] { place-items: end center; }
+    .modal-card {
+        width: 100%;
+        max-height: 92vh;
+        border-radius: 18px 18px 0 0;
+    }
+    .form-row.flex-2,
+    .form-row.flex-3 { grid-template-columns: 1fr; }
+    .modal-footer { flex-direction: column-reverse; }
+    .modal-footer .btn { width: 100%; }
+}
+
+/* Sin movimiento: el toast sigue ocultándose solo, pero sin deslizarse */
+@media (prefers-reduced-motion: reduce) {
+    .modal-overlay[open],
+    .modal-card,
+    .map-box { animation: none !important; }
+    .toast { animation: toast-life 4s steps(1, end) forwards; }
+}
+/* =========================================================
+   PIE DE MODAL - ALINEACIÓN A LA DERECHA Y TAMAÑO SIMÉTRICO
+   ========================================================= */
+
+.modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end; /* 👈 Agrupa ambos botones a la derecha */
+    gap: 12px;                 /* Espacio simétrico entre botones */
+    padding-top: 1rem;
+    margin-top: 1rem;
+    border-top: 1px solid rgba(128, 52, 210, 0.12);
+}
+
+/* 1. Botón Cancelar (Fondo blanco, borde sutil) */
+.modal-footer .btn-outline {
+    flex: initial;             /* Anula cualquier estiramiento previo */
+    min-width: 110px;
+    padding: 0.75rem 1.25rem;
+    background: #ffffff;
+    border: 1px solid var(--edge, #AE9DCC);
+    border-radius: 10px;
+    color: var(--ink, #170933);
+    font-family: var(--font-display, "Chakra Petch", sans-serif);
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-align: center;
+}
+
+/* 2. Botón + Crear orden (Mismo tamaño proporcional, neón morado) */
+.modal-footer .btn-submit {
+    flex: initial;             /* YA NO se estira por toda la pantalla */
+    width: auto;               /* Tamaño adaptado al contenido y padding */
+    margin-top: 0;             /* Remueve márgenes superiores heredados */
+    padding: 0.75rem 1.4rem;   /* Mismo alto relativo que el botón Cancelar */
+    background: var(--neon, #8034D2);
+    border-radius: 10px;
+    font-family: var(--font-display, "Chakra Petch", sans-serif);
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #ffffff;
+    box-shadow: 0 4px 16px rgba(128, 52, 210, 0.35);
+    text-align: center;
+}
+
+.modal-footer .btn-submit:hover {
+    filter: brightness(1.08);
+    box-shadow: 0 6px 20px rgba(128, 52, 210, 0.45);
+}
+/* =========================================================
+   MENSAJE DE BIENVENIDA EN EL HEADER SUPERIOR
+   Reutiliza las variables de variables.css (--ink-soft y --neon)
+   ========================================================= */
+.welcome-msg {
+    font-size: 0.95rem;
+    color: var(--ink-soft); /* Reutiliza el tono suave #6E5799 */
+}
+
+.welcome-msg strong {
+    color: var(--neon); /* Reutiliza el neón morado principal #8034D2 */
+    font-weight: 600;
+}
