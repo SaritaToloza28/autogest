@@ -6,6 +6,24 @@
     <title>Vehículos | Autogest</title>
     <link rel="stylesheet" href="../../static/css/styles.css" th:href="@{/css/styles.css}">
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script>
+        //Al hacer clic en un resultado del buscador: guarda el id, muestra el nombre y cierra la lista
+        function selectCarModel(button) {
+            const form = button.closest('form');
+            form.querySelector('[name="carModelId"]').value = button.dataset.id;
+            form.querySelector('[name="text"]').value = button.dataset.label;
+            document.getElementById('car-model-results').innerHTML = '';
+        }
+
+        //Cierra la lista si se hace clic fuera del buscador
+        document.addEventListener('click', function (event) {
+            const results = document.getElementById('car-model-results');
+
+            if (results && !event.target.closest('.autocomplete')) {
+                results.innerHTML = '';
+            }
+        });
+    </script>
 </head>
 <body hx-headers='{"X-CSRF-TOKEN": "estatico"}'
       th:hx-headers="|{&quot;${_csrf.headerName}&quot;: &quot;${_csrf.token}&quot;}|">
@@ -57,17 +75,34 @@
                        value="" th:value="${vehicle.ownerPhone}">
             </div>
 
-            <div class="field">
-                <label for="carModelId">Modelo</label>
-                <select id="carModelId" name="carModelId" required>
-                    <option value=""
-                            th:text="${#lists.isEmpty(carModels)} ? 'No hay modelos registrados' : 'Seleccione…'">Seleccione…</option>
-                    <option th:each="m : ${carModels}"
-                            value="1"
-                            th:value="${m.id}"
+            <div class="field autocomplete">
+                <label for="carModelSearch">Modelo</label>
+                <!-- Buscador: mientras se escribe, el servidor devuelve los modelos que coinciden.
+                     Si se vuelve a escribir, se borra el modelo elegido hasta escoger otro. -->
+                <input id="carModelSearch" type="search" name="text" autocomplete="off"
+                       placeholder="Escribe marca o modelo, ej. mazda 3"
+                       value="" th:value="${carModelLabel}"
+                       hx-get="/vehicles/car-models/search"
+                       th:hx-get="@{/vehicles/car-models/search}"
+                       hx-trigger="input changed delay:300ms, focus"
+                       hx-target="#car-model-results"
+                       hx-swap="outerHTML"
+                       oninput="this.form.carModelId.value = ''">
+
+                <!-- Lo que realmente se envía: el id del modelo elegido -->
+                <input type="hidden" name="carModelId" value="" th:value="${vehicle.carModelId}">
+
+                <div id="car-model-results" class="autocomplete-results" th:fragment="car-model-results">
+                    <p class="empty" th:if="${carModels != null and #lists.isEmpty(carModels)}">
+                        No hay modelos que coincidan
+                    </p>
+
+                    <button type="button" th:each="m : ${carModels}"
+                            th:data-id="${m.id}"
+                            th:data-label="|${m.brand} ${m.name}|"
                             th:text="|${m.brand} ${m.name}|"
-                            th:selected="${m.id == vehicle.carModelId}">Mazda 3</option>
-                </select>
+                            onclick="selectCarModel(this)">Mazda 3</button>
+                </div>
             </div>
         </div>
 

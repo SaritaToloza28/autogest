@@ -27,7 +27,7 @@ public class RepairService {
     private final RepairRepository repository;
     private final VehicleService vehicleService;
     private final AppUserService appUserService;
-    //Repositorio (no servicio) porque solo se busca el repuesto y se actualiza su stock
+    //Repositorio porque solo se busca el repuesto y se actualiza su stock
     private final SparePartRepository sparePartRepository;
 
     public RepairService(RepairRepository repository,
@@ -71,6 +71,7 @@ public class RepairService {
 
     // ---------- Registro (operador) ----------
 
+    //TODO: falta agregar funcionalidad donde se crea vehicle
     public RepairDTO createRepair(RepairDTO repairRequest) throws EntityNotFoundException, IllegalArgumentException {
         validateRequest(repairRequest);
 
@@ -82,7 +83,6 @@ public class RepairService {
 
         setAttributesFromDTO(repairRequest, repair, vehicle, mechanic);
 
-        //la fecha y el estado PENDING los asigna @PrePersist
         this.repository.save(repair);
 
         return toDTO(repair);
@@ -93,7 +93,6 @@ public class RepairService {
 
         Repair repair = findRepairById(repairId);
 
-        //solo se edita antes de que el mecánico empiece
         if (repair.getStatus() != RepairStatus.PENDING){
             throw new IllegalArgumentException("Solo se puede editar una reparación pendiente");
         }
@@ -143,8 +142,10 @@ public class RepairService {
         changeStatus(repair, RepairStatus.DELIVERED);
     }
 
-    //Operador: PENDING o IN_PROGRESS -> CANCELLED. Los repuestos usados vuelven al stock.
-    //@Transactional: se actualizan varios repuestos y la reparación, todo o nada
+
+    // @Transactional: Protege la base de datos (todoo o nada). Si falla al
+    // devolver algún repuesto, deshace todos los cambios automáticamente
+    // para evitar que el inventario quede descuadrado.
     @Transactional
     public void cancelRepair(Long repairId) throws EntityNotFoundException, IllegalArgumentException {
         Repair repair = findRepairById(repairId);
@@ -164,6 +165,7 @@ public class RepairService {
     }
 
     // ---------- Repuestos usados (mecánico) ----------
+
 
     //Descuenta el stock; si el repuesto ya estaba en la reparación, suma la cantidad
     @Transactional

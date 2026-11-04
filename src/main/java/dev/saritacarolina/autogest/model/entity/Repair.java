@@ -143,6 +143,7 @@ public class Repair {
         return usedParts;
     }
 
+    //no se usa porque el servicio nunca reemplaza el mapa entero
     public void setUsedParts(Map<SparePart, Integer> usedParts) {
         this.usedParts = usedParts;
     }

@@ -2,6 +2,7 @@ package dev.saritacarolina.autogest.controller;
 
 import dev.saritacarolina.autogest.model.constant.PlateColor;
 import dev.saritacarolina.autogest.model.dto.VehicleDTO;
+import dev.saritacarolina.autogest.model.entity.CarModel;
 import dev.saritacarolina.autogest.model.entity.Vehicle;
 import dev.saritacarolina.autogest.service.CarModelService;
 import dev.saritacarolina.autogest.service.VehicleService;
@@ -54,6 +55,14 @@ public class VehicleController {
         }
     }
 
+    //Fragmento: modelos que coinciden con lo que se escribe en el buscador del formulario.
+    //Va en /vehicles y no en /car-models porque el operador no puede entrar a /car-models (solo ADMIN)
+    @GetMapping("/car-models/search")
+    public String searchCarModels(@RequestParam(required = false) String text, Model model){
+        model.addAttribute("carModels", carModelService.searchCarModels(text));
+        return "vehicles/list :: car-model-results";
+    }
+
     @PostMapping
     public String createVehicle(@ModelAttribute VehicleDTO vehicleRequest, Model model){
         try {
@@ -97,13 +106,27 @@ public class VehicleController {
         }
     }
 
-    //El formulario siempre necesita los modelos y los colores para los <select>
+    //El formulario necesita los colores para el <select> y el texto del modelo elegido para el buscador
     //vehicleId va aparte porque el DTO no tiene id (null = formulario de creación)
     private void addFormData(Model model, VehicleDTO vehicle, Long vehicleId){
         model.addAttribute("vehicle", vehicle);
         model.addAttribute("vehicleId", vehicleId);
-        model.addAttribute("carModels", carModelService.findAllCarModels());
+        model.addAttribute("carModelLabel", carModelLabel(vehicle.carModelId()));
         model.addAttribute("plateColors", PlateColor.values());
+    }
+
+    //Texto que se muestra en el buscador al editar o al devolver un error: "Mazda 3"
+    private String carModelLabel(Long carModelId){
+        if (carModelId == null){
+            return "";
+        }
+
+        try {
+            CarModel carModel = carModelService.findCarModelById(carModelId);
+            return carModel.getBrand() + " " + carModel.getName();
+        } catch (EntityNotFoundException e) {
+            return "";
+        }
     }
 
     private String toast(Model model, String type, String message){

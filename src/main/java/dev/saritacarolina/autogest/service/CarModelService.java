@@ -31,6 +31,16 @@ public class CarModelService {
         return this.repository.findAllByOrderByBrandAscNameAsc();
     }
 
+    //Búsqueda mientras se escribe: "maz", "spark" o "mazda 3"
+    public List<CarModel> searchCarModels(String text){
+        //sin texto, se muestran todos los modelos
+        if (text == null || text.isBlank()){
+            return this.repository.findAllByOrderByBrandAscNameAsc();
+        }
+
+        return this.repository.searchByText(text.trim());
+    }
+
     public CarModel findCarModelById(Long carModelId) throws EntityNotFoundException {
         return this.repository.findById(carModelId)
                 .orElseThrow(() -> new EntityNotFoundException("Modelo con id " + carModelId + " no encontrado"));

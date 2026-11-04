@@ -2,11 +2,10 @@ package dev.saritacarolina.autogest.model.constant;
 
 public enum ServiceType {
 
-    //Deben iniciar de la misma forma
+    //Lo de los parentesis es para la salida del textp
     SERVICE_INTERNAL("En el taller"),
     SERVICE_EXTERNAL("A domicilio");
 
-    //TODO: averiguar bien lo de rich enum
     private final String label;
 
     ServiceType(String label) {

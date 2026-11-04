@@ -13,6 +13,7 @@ import java.util.Optional;
 @Repository
 public interface RepairRepository extends JpaRepository<Repair, Long> {
 
+    //lo fr @EntityGraph es solo para llaves foráneas
     //Listado del operador: trae vehículo, modelo y mecánico en la misma consulta
     @EntityGraph(attributePaths = {"vehicle", "vehicle.carModel", "mechanic"})
     List<Repair> findAllByOrderByRepairDateDesc();
@@ -24,7 +25,9 @@ public interface RepairRepository extends JpaRepository<Repair, Long> {
     @EntityGraph(attributePaths = {"vehicle", "vehicle.carModel", "mechanic"})
     Optional<Repair> findWithDetailsById(Long id);
 
-    //Consulta pública: compara la placa sin guion, así "ABC123" encuentra "ABC-123"
+    // Obtiene el historial de reparaciones buscando por placa (ignorando guiones) ordenado en DESC.
+    //JPQL es para consultar las clases no la bd
+    //Consulta pública: compara la placa sin guion
     @EntityGraph(attributePaths = {"vehicle", "vehicle.carModel"})
     @Query("SELECT r FROM Repair r WHERE REPLACE(r.vehicle.licensePlate, '-', '') = :plate ORDER BY r.repairDate DESC")
     List<Repair> findByLicensePlateWithoutDash(@Param("plate") String plate);
