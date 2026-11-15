@@ -11,7 +11,7 @@ import org.springframework.web.servlet.ModelAndView;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    //La imagen supera el límite: Spring la rechaza antes de llegar al controlador
+    //La imagen supera el límite
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ModelAndView handleMaxUploadSize(HttpServletResponse response){
         //No reemplaza el formulario, solo muestra el Toast
@@ -23,8 +23,7 @@ public class GlobalExceptionHandler {
         return modelAndView;
     }
 
-    //La base de datos rechazó la operación (dato repetido o registro en uso).
-    //Red de seguridad: los servicios ya validan esto con mensajes más precisos
+    //La base de datos rechazó la operación
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ModelAndView handleDataIntegrity(HttpServletResponse response){
         //No reemplaza el formulario, solo muestra el Toast

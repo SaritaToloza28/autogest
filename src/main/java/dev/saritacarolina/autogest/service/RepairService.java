@@ -4,6 +4,7 @@ import dev.saritacarolina.autogest.model.constant.RepairStatus;
 import dev.saritacarolina.autogest.model.constant.Role;
 import dev.saritacarolina.autogest.model.constant.ServiceType;
 import dev.saritacarolina.autogest.model.dto.RepairDTO;
+import dev.saritacarolina.autogest.model.dto.RepairStatusDTO;
 import dev.saritacarolina.autogest.model.entity.AppUser;
 import dev.saritacarolina.autogest.model.entity.Repair;
 import dev.saritacarolina.autogest.model.entity.SparePart;
@@ -15,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -27,7 +30,6 @@ public class RepairService {
     private final RepairRepository repository;
     private final VehicleService vehicleService;
     private final AppUserService appUserService;
-    //Repositorio porque solo se busca el repuesto y se actualiza su stock
     private final SparePartRepository sparePartRepository;
 
     public RepairService(RepairRepository repository,
@@ -44,12 +46,8 @@ public class RepairService {
         return this.repository.findAllByOrderByRepairDateDesc();
     }
 
-    //Reparaciones del mecánico con sesión iniciada; el admin las ve todas
-    public List<Repair> findAssignedRepairs(String username, boolean isAdmin){
-        if (isAdmin){
-            return findAllRepairs();
-        }
-
+    //Reparaciones del mecánico con sesión iniciada
+    public List<Repair> findAssignedRepairs(String username){
         return this.repository.findByMechanicUsernameOrderByRepairDateDesc(username);
     }
 
@@ -58,20 +56,64 @@ public class RepairService {
                 .orElseThrow(() -> new EntityNotFoundException("Reparación con id " + repairId + " no encontrada"));
     }
 
-    //Consulta pública: "abc 123", "ABC123" o "abc-123" buscan la misma placa
-    public List<Repair> findRepairsByLicensePlate(String rawPlate) throws IllegalArgumentException {
+    //Buscador del dashboard
+    public List<Repair> searchRepairs(String text){
+        if (text == null || text.isBlank()){
+            return findAllRepairs();
+        }
+
+        String clean = text.trim();
+        //la placa se compara sin guion ni espacios: "abc 12" -> "ABC12"
+        String plate = clean.toUpperCase().replaceAll("[^A-Z0-9]", "");
+
+        return this.repository.searchByText(plate, clean);
+    }
+
+    //Consulta pública
+    public List<RepairStatusDTO> findRepairsByLicensePlate(String rawPlate) throws IllegalArgumentException {
         String plate = rawPlate == null ? "" : rawPlate.toUpperCase().replaceAll("[^A-Z0-9]", "");
 
         if (plate.isEmpty()){
             throw new IllegalArgumentException("Escribe la placa del vehículo");
         }
 
-        return this.repository.findByLicensePlateWithoutDash(plate);
+        return this.repository.findByLicensePlateWithoutDash(plate).stream()
+                .map(repair -> new RepairStatusDTO(
+                        repair.getRepairDate(),
+                        repair.getVehicle().getLicensePlate(),
+                        repair.getVehicle().getCarModel().getDisplayName(),
+                        repair.getReason(),
+                        repair.getStatus().getLabel()))
+                .toList();
+    }
+
+    //Recepción: el vehículo ya tiene una orden pendiente o en progreso
+    public boolean hasOpenRepair(Long vehicleId){
+        List<RepairStatus> openStatuses = Arrays.stream(RepairStatus.values())
+                .filter(RepairStatus::isOpen)
+                .toList();
+
+        return this.repository.existsByVehicleIdAndStatusIn(vehicleId, openStatuses);
+    }
+
+    //Vista del mecánico: para cada reparación en progreso, los repuestos compatibles con su vehículo
+    public Map<Long, List<SparePart>> findCompatiblePartsForInProgress(List<Repair> repairs){
+        Map<Long, List<SparePart>> compatibleParts = new HashMap<>();
+
+        for (Repair repair : repairs){
+            if (repair.getStatus() == RepairStatus.IN_PROGRESS){
+                Long carModelId = repair.getVehicle().getCarModel().getId();
+                compatibleParts.put(repair.getId(),
+                        this.sparePartRepository.findByCompatibleModelsIdOrderByNameAsc(carModelId));
+            }
+        }
+
+        return compatibleParts;
     }
 
     // ---------- Registro (operador) ----------
 
-    //TODO: falta agregar funcionalidad donde se crea vehicle
+    //El vehículo se busca o registra antes
     public RepairDTO createRepair(RepairDTO repairRequest) throws EntityNotFoundException, IllegalArgumentException {
         validateRequest(repairRequest);
 
@@ -121,21 +163,18 @@ public class RepairService {
 
     // ---------- Cambios de estado ----------
 
-    //Mecánico: PENDING -> IN_PROGRESS
-    public void startRepair(Long repairId, String username, boolean isAdmin) throws EntityNotFoundException, IllegalArgumentException {
-        Repair repair = findAssignedRepair(repairId, username, isAdmin);
+    public void startRepair(Long repairId, String username) throws EntityNotFoundException, IllegalArgumentException {
+        Repair repair = findAssignedRepair(repairId, username);
 
         changeStatus(repair, RepairStatus.IN_PROGRESS);
     }
 
-    //Mecánico: IN_PROGRESS -> COMPLETED
-    public void completeRepair(Long repairId, String username, boolean isAdmin) throws EntityNotFoundException, IllegalArgumentException {
-        Repair repair = findAssignedRepair(repairId, username, isAdmin);
+    public void completeRepair(Long repairId, String username) throws EntityNotFoundException, IllegalArgumentException {
+        Repair repair = findAssignedRepair(repairId, username);
 
         changeStatus(repair, RepairStatus.COMPLETED);
     }
 
-    //Operador: COMPLETED -> DELIVERED (el vehículo se entrega al cliente)
     public void deliverRepair(Long repairId) throws EntityNotFoundException, IllegalArgumentException {
         Repair repair = findRepairById(repairId);
 
@@ -143,9 +182,7 @@ public class RepairService {
     }
 
 
-    // @Transactional: Protege la base de datos (todoo o nada). Si falla al
-    // devolver algún repuesto, deshace todos los cambios automáticamente
-    // para evitar que el inventario quede descuadrado.
+    // @Transactional: Protege la base de datos (todoo o nada)
     @Transactional
     public void cancelRepair(Long repairId) throws EntityNotFoundException, IllegalArgumentException {
         Repair repair = findRepairById(repairId);
@@ -164,13 +201,10 @@ public class RepairService {
         this.repository.save(repair);
     }
 
-    // ---------- Repuestos usados (mecánico) ----------
-
-
-    //Descuenta el stock; si el repuesto ya estaba en la reparación, suma la cantidad
+    //Descuenta el stock
     @Transactional
-    public void addSparePart(Long repairId, Long sparePartId, Integer quantity, String username, boolean isAdmin) throws EntityNotFoundException, IllegalArgumentException {
-        Repair repair = findAssignedRepair(repairId, username, isAdmin);
+    public void addSparePart(Long repairId, Long sparePartId, Integer quantity, String username) throws EntityNotFoundException, IllegalArgumentException {
+        Repair repair = findAssignedRepair(repairId, username);
 
         validateInProgress(repair);
 
@@ -208,8 +242,8 @@ public class RepairService {
 
     //Quita el repuesto de la reparación y devuelve la cantidad al stock
     @Transactional
-    public void removeSparePart(Long repairId, Long sparePartId, String username, boolean isAdmin) throws EntityNotFoundException, IllegalArgumentException {
-        Repair repair = findAssignedRepair(repairId, username, isAdmin);
+    public void removeSparePart(Long repairId, Long sparePartId, String username) throws EntityNotFoundException, IllegalArgumentException {
+        Repair repair = findAssignedRepair(repairId, username);
 
         validateInProgress(repair);
 
@@ -269,11 +303,11 @@ public class RepairService {
         return mechanic;
     }
 
-    //El mecánico solo puede trabajar sus propias reparaciones; el admin, cualquiera
-    private Repair findAssignedRepair(Long repairId, String username, boolean isAdmin) throws EntityNotFoundException, IllegalArgumentException {
+    //El mecánico solo puede trabajar sus propias reparaciones
+    private Repair findAssignedRepair(Long repairId, String username) throws EntityNotFoundException, IllegalArgumentException {
         Repair repair = findRepairById(repairId);
 
-        if (!isAdmin && !repair.getMechanic().getUsername().equals(username)){
+        if (!repair.getMechanic().getUsername().equals(username)){
             throw new IllegalArgumentException("Esta reparación no está asignada a ti");
         }
 
@@ -303,7 +337,6 @@ public class RepairService {
     }
 
     private void validateRequest(RepairDTO request){
-        //motivo obligatorio
         if (request.reason() == null || request.reason().isBlank()){
             throw new IllegalArgumentException("El motivo de la reparación es obligatorio");
         }
@@ -312,12 +345,10 @@ public class RepairService {
             throw new IllegalArgumentException("El motivo no puede superar 500 caracteres");
         }
 
-        //tipo de servicio obligatorio
         if (request.serviceType() == null){
             throw new IllegalArgumentException("El tipo de servicio es obligatorio");
         }
 
-        //vehículo y mecánico obligatorios
         if (request.vehicleId() == null){
             throw new IllegalArgumentException("Debe seleccionar un vehículo");
         }
@@ -326,7 +357,6 @@ public class RepairService {
             throw new IllegalArgumentException("Debe seleccionar un mecánico");
         }
 
-        //a domicilio: latitud y longitud obligatorias y dentro del rango válido
         if (request.serviceType() == ServiceType.SERVICE_EXTERNAL){
             if (request.latitude() == null || request.longitude() == null){
                 throw new IllegalArgumentException("Para el servicio a domicilio la latitud y la longitud son obligatorias");
@@ -340,7 +370,6 @@ public class RepairService {
                 throw new IllegalArgumentException("La longitud debe estar entre -180 y 180");
             }
 
-            //las columnas guardan máximo 6 decimales
             if (request.latitude().stripTrailingZeros().scale() > 6 || request.longitude().stripTrailingZeros().scale() > 6){
                 throw new IllegalArgumentException("La latitud y la longitud pueden tener máximo 6 decimales");
             }

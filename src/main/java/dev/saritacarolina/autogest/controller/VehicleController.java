@@ -2,7 +2,6 @@ package dev.saritacarolina.autogest.controller;
 
 import dev.saritacarolina.autogest.model.constant.PlateColor;
 import dev.saritacarolina.autogest.model.dto.VehicleDTO;
-import dev.saritacarolina.autogest.model.entity.CarModel;
 import dev.saritacarolina.autogest.model.entity.Vehicle;
 import dev.saritacarolina.autogest.service.CarModelService;
 import dev.saritacarolina.autogest.service.VehicleService;
@@ -25,42 +24,47 @@ public class VehicleController {
         this.carModelService = carModelService;
     }
 
-    //Página completa: formulario vacío + tabla
+    //Página completa: tabla
     @GetMapping
     public String getVehicleTemplate(Model model){
 
         List<Vehicle> vehicles = service.findAllVehicles();
 
         model.addAttribute("vehicles", vehicles);
-        addFormData(model, emptyForm(), null);
         return "vehicles/list";
     }
 
-    //Fragmento: formulario vacío (botón "Cancelar")
+    //Fragmento: modal vacío
     @GetMapping("/form")
     public String getEmptyForm(Model model){
         addFormData(model, emptyForm(), null);
-        return "vehicles/list :: form";
+        return "vehicles/form :: modal";
     }
 
-    //Fragmento: formulario con los datos del vehículo a editar
+    //Fragmento: modal con los datos del vehículo a editar
     @GetMapping("/{id}/edit")
     public String getEditForm(@PathVariable("id") Long vehicleId, Model model){
         try {
             addFormData(model, service.toDTO(service.findVehicleById(vehicleId)), vehicleId);
-            return "vehicles/list :: form";
+            return "vehicles/form :: modal";
         } catch (EntityNotFoundException e) {
-            addFormData(model, emptyForm(), null);
             return toast(model, "error", e.getMessage());
         }
     }
 
-    //Fragmento: modelos que coinciden con lo que se escribe en el buscador del formulario.
-    //Va en /vehicles y no en /car-models porque el operador no puede entrar a /car-models (solo ADMIN)
+    //Fragmento: tabla filtrada por parte de la placa o del propietario
+    @GetMapping("/search")
+    public String searchVehicles(@RequestParam(required = false) String q, Model model){
+        model.addAttribute("vehicles", service.searchVehicles(q));
+        model.addAttribute("q", q);
+        return "vehicles/list :: table";
+    }
+
+    //Fragmento: modelos que coinciden con lo que se busca.
     @GetMapping("/car-models/search")
     public String searchCarModels(@RequestParam(required = false) String text, Model model){
         model.addAttribute("carModels", carModelService.searchCarModels(text));
-        return "vehicles/list :: car-model-results";
+        return "vehicles/form :: car-model-results";
     }
 
     @PostMapping
@@ -68,12 +72,10 @@ public class VehicleController {
         try {
             VehicleDTO created = service.createVehicle(vehicleRequest);
 
-            addFormData(model, emptyForm(), null);
             model.addAttribute("vehicles", service.findAllVehicles());
+            model.addAttribute("closeModal", true);
             return toast(model, "success", "Vehículo " + created.licensePlate() + " registrado");
         } catch (IllegalArgumentException | EntityNotFoundException e) {
-            //Se devuelve el formulario con lo que escribió el usuario
-            addFormData(model, vehicleRequest, null);
             return toast(model, "error", e.getMessage());
         }
     }
@@ -85,11 +87,10 @@ public class VehicleController {
         try {
             VehicleDTO updated = service.updateVehicle(vehicleId, vehicleRequest);
 
-            addFormData(model, emptyForm(), null);
             model.addAttribute("vehicles", service.findAllVehicles());
+            model.addAttribute("closeModal", true);
             return toast(model, "success", "Vehículo " + updated.licensePlate() + " actualizado");
         } catch (IllegalArgumentException | EntityNotFoundException e) {
-            addFormData(model, vehicleRequest, vehicleId);
             return toast(model, "error", e.getMessage());
         }
     }
@@ -106,27 +107,13 @@ public class VehicleController {
         }
     }
 
-    //El formulario necesita los colores para el <select> y el texto del modelo elegido para el buscador
-    //vehicleId va aparte porque el DTO no tiene id (null = formulario de creación)
+    //El modal necesita los colores y el texto del modelo elegido para el buscador
     private void addFormData(Model model, VehicleDTO vehicle, Long vehicleId){
         model.addAttribute("vehicle", vehicle);
         model.addAttribute("vehicleId", vehicleId);
-        model.addAttribute("carModelLabel", carModelLabel(vehicle.carModelId()));
+        //Texto que se muestra en el buscador al editar o al devolver un error: "Mazda 3"
+        model.addAttribute("carModelLabel", carModelService.findDisplayName(vehicle.carModelId()));
         model.addAttribute("plateColors", PlateColor.values());
-    }
-
-    //Texto que se muestra en el buscador al editar o al devolver un error: "Mazda 3"
-    private String carModelLabel(Long carModelId){
-        if (carModelId == null){
-            return "";
-        }
-
-        try {
-            CarModel carModel = carModelService.findCarModelById(carModelId);
-            return carModel.getBrand() + " " + carModel.getName();
-        } catch (EntityNotFoundException e) {
-            return "";
-        }
     }
 
     private String toast(Model model, String type, String message){
@@ -136,6 +123,6 @@ public class VehicleController {
     }
 
     private VehicleDTO emptyForm(){
-        return new VehicleDTO("", null, "", "", null);
+        return VehicleDTO.empty();
     }
 }

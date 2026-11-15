@@ -17,7 +17,6 @@ import java.util.Map;
 @Table(name = "repair")
 public class Repair {
 
-    //Llave primaria
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
@@ -52,7 +51,7 @@ public class Repair {
     @JoinColumn(name = "mechanic_id", nullable = false)
     private AppUser mechanic;
 
-    //Tabla de rompimiento repair_spare_part: repuesto -> cantidad usada
+    //Tabla de rompimiento repair_spare_part
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "repair_spare_part", joinColumns = @JoinColumn(name = "repair_id"))
     @MapKeyJoinColumn(name = "spare_part_id")

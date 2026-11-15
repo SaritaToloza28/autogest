@@ -164,7 +164,6 @@ public class AppUserService {
 
     //Valida los datos
     private void validateRequest(AppUserDTO request){
-        //usuario obligatorio
         if (!hasText(request.username())){
             throw new IllegalArgumentException("El usuario es obligatorio");
         }
@@ -173,7 +172,6 @@ public class AppUserService {
             throw new IllegalArgumentException("El usuario no puede superar 50 caracteres");
         }
 
-        //nombre obligatorio
         if (!hasText(request.fullName())){
             throw new IllegalArgumentException("El nombre es obligatorio");
         }
@@ -182,7 +180,6 @@ public class AppUserService {
             throw new IllegalArgumentException("El nombre no puede superar 100 caracteres");
         }
 
-        //rol obligatorio
         if (request.role() == null){
             throw new IllegalArgumentException("El rol es obligatorio");
         }

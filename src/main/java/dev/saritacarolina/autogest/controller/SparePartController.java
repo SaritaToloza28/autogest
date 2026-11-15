@@ -26,7 +26,7 @@ public class SparePartController {
         this.carModelService = carModelService;
     }
 
-    //Página completa: formulario vacío + tabla
+    //Página completa
     @GetMapping
     public String getSparePartTemplate(Model model){
 
@@ -37,7 +37,7 @@ public class SparePartController {
         return "spare-parts/list";
     }
 
-    //Fragmento: formulario vacío (botón "Cancelar")
+    //Fragmento: formulario vacío
     @GetMapping("/form")
     public String getEmptyForm(Model model){
         addFormData(model, emptyForm(), null);
@@ -103,8 +103,7 @@ public class SparePartController {
         }
     }
 
-    //El formulario siempre necesita los modelos para los checkboxes
-    //sparePartId va aparte porque el DTO no tiene id (null = formulario de creación)
+    //El formulario siempre necesita los modelos para poder registrarlo
     private void addFormData(Model model, SparePartDTO sparePart, Long sparePartId){
         model.addAttribute("sparePart", sparePart);
         model.addAttribute("sparePartId", sparePartId);

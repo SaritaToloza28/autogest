@@ -10,6 +10,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class VehicleService {
@@ -30,12 +31,42 @@ public class VehicleService {
         return this.repository.findAllByOrderByLicensePlateAsc();
     }
 
+    //Buscador de la tabla
+    public List<Vehicle> searchVehicles(String text){
+        if (text == null || text.isBlank()){
+            return findAllVehicles();
+        }
+
+        String clean = text.trim();
+        String plate = clean.toUpperCase().replaceAll("[^A-Z0-9]", "");
+
+        return this.repository.searchByText(plate, clean);
+    }
+
     public Vehicle findVehicleById(Long vehicleId) throws EntityNotFoundException {
         return this.repository.findById(vehicleId)
                 .orElseThrow(() -> new EntityNotFoundException("Vehículo con id " + vehicleId + " no encontrado"));
     }
 
+    //Recepción: normaliza la placa según el color y la busca
+    public Optional<Vehicle> findVehicleByPlate(PlateColor plateColor, String rawPlate) throws IllegalArgumentException {
+        if (plateColor == null){
+            throw new IllegalArgumentException("Selecciona el color de la placa");
+        }
+
+        if (rawPlate == null || rawPlate.isBlank()){
+            throw new IllegalArgumentException("Escribe la placa del vehículo");
+        }
+
+        return this.repository.findByLicensePlate(normalizePlate(rawPlate, plateColor));
+    }
+
+    //Formulario de /vehicles: devuelve un DTO
     public VehicleDTO createVehicle(VehicleDTO vehicleRequest) throws EntityNotFoundException, IllegalArgumentException {
+        return toDTO(registerVehicle(vehicleRequest));
+    }
+
+    public Vehicle registerVehicle(VehicleDTO vehicleRequest) throws EntityNotFoundException, IllegalArgumentException {
         validateRequest(vehicleRequest);
 
         String licensePlate = normalizePlate(vehicleRequest.licensePlate(), vehicleRequest.plateColor());
@@ -52,9 +83,7 @@ public class VehicleService {
 
         setAttributesFromDTO(vehicleRequest, vehicle, licensePlate, ownerPhone, carModel);
 
-        this.repository.save(vehicle);
-
-        return toDTO(vehicle);
+        return this.repository.save(vehicle);
     }
 
     public VehicleDTO updateVehicle(Long vehicleId, VehicleDTO vehicleRequest) throws EntityNotFoundException, IllegalArgumentException {
@@ -108,16 +137,13 @@ public class VehicleService {
         );
     }
 
-    //"300 123 4567", "300-123-4567" o "+57 3001234567" -> "3001234567"
     private String normalizePhone(String rawPhone){
         String ownerPhone = rawPhone.replaceAll("[^0-9]", "");
 
-        //quita el indicativo de Colombia si viene
         if (ownerPhone.length() == 12 && ownerPhone.startsWith("57")){
             ownerPhone = ownerPhone.substring(2);
         }
 
-        //celular colombiano: 10 dígitos que empiezan por 3
         if (!ownerPhone.matches("3\\d{9}")){
             throw new IllegalArgumentException("El celular debe tener 10 dígitos y empezar por 3 (ej. 3001234567)");
         }
@@ -125,7 +151,7 @@ public class VehicleService {
         return ownerPhone;
     }
 
-    private String normalizePlate(String rawPlate, PlateColor plateColor){
+    public String normalizePlate(String rawPlate, PlateColor plateColor) throws IllegalArgumentException {
         String licensePlate = plateColor.normalize(rawPlate);
 
         //formato según el color
@@ -138,17 +164,14 @@ public class VehicleService {
     }
 
     private void validateRequest(VehicleDTO request){
-        //placa obligatoria
         if (request.licensePlate() == null || request.licensePlate().isBlank()){
             throw new IllegalArgumentException("La placa es obligatoria");
         }
 
-        //color obligatorio
         if (request.plateColor() == null){
             throw new IllegalArgumentException("El color de la placa es obligatorio");
         }
 
-        //propietario obligatorio
         if (request.ownerName() == null || request.ownerName().isBlank()){
             throw new IllegalArgumentException("El nombre del propietario es obligatorio");
         }
@@ -157,12 +180,10 @@ public class VehicleService {
             throw new IllegalArgumentException("El nombre del propietario no puede superar 100 caracteres");
         }
 
-        //celular obligatorio
         if (request.ownerPhone() == null || request.ownerPhone().isBlank()){
             throw new IllegalArgumentException("El celular del propietario es obligatorio");
         }
 
-        //modelo obligatorio
         if (request.carModelId() == null){
             throw new IllegalArgumentException("Debe seleccionar un modelo");
         }

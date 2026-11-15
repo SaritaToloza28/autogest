@@ -20,6 +20,8 @@ dependencies {
 
     implementation("org.springframework.boot:spring-boot-starter-security")
 
+    implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity6")
+
     developmentOnly("org.springframework.boot:spring-boot-devtools")
 
     // database

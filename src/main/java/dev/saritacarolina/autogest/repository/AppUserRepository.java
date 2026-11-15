@@ -20,7 +20,7 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
 
     boolean existsByUsername(String username);
 
-    //Evita duplicados al crear, sin distinguir mayúsculas ("Admin" = "admin"), igual que CarModel
+    //Evita duplicados al crear, sin distinguir mayúsculas ("Admin" = "admin")
     boolean existsByUsernameIgnoreCase(String username);
 
     //Evita duplicados al editar, excluyendo el propio registro

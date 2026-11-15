@@ -15,7 +15,6 @@ public enum RepairStatus {
     }
 
     //Orden fijo: PENDING -> IN_PROGRESS -> COMPLETED -> DELIVERED.
-    //Solo se cancela antes de completar; entregada o cancelada ya no cambia.
     public boolean canChangeTo(RepairStatus next){
         return switch (this) {
             case PENDING -> next == IN_PROGRESS || next == CANCELLED;
@@ -23,6 +22,10 @@ public enum RepairStatus {
             case COMPLETED -> next == DELIVERED;
             case DELIVERED, CANCELLED -> false;
         };
+    }
+
+    public boolean isOpen(){
+        return this == PENDING || this == IN_PROGRESS;
     }
 
     public String getLabel() {

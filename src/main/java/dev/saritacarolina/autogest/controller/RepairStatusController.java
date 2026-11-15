@@ -7,8 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-//Consulta pública (sin iniciar sesión): el cliente busca sus reparaciones por placa.
-//La vista solo muestra fecha, motivo y estado; nunca datos del propietario ni del mecánico.
+//Consulta pública
 @Controller
 @RequestMapping("/repair-status")
 public class RepairStatusController {

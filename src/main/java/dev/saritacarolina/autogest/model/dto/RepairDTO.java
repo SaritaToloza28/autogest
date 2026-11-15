@@ -13,4 +13,9 @@ public record RepairDTO(
         Long vehicleId,
         Long mechanicId
 ) {
+
+    //Formulario vacío (creación)
+    public static RepairDTO empty(){
+        return new RepairDTO("", null, null, null, null, null);
+    }
 }

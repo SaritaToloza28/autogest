@@ -10,7 +10,6 @@ import java.util.Set;
 @Table(name = "spare_part")
 public class SparePart {
 
-    //Llave primaria
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
@@ -112,7 +111,7 @@ public class SparePart {
         return id != null && id.equals(other.getId());
     }
 
-    //Manda todos los repuestos a la misma sección del estante para que Java no los pierda de vista antes o después de guardarlos.
+    //Manda todos los repuestos a la misma sección del estante para que Java no los pierda de vista antes o después de guardarlos
     @Override
     public int hashCode() {
         return SparePart.class.hashCode();

@@ -12,6 +12,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Map;
 import java.util.UUID;
 
+//Guarda y borra las fotos que se suben.
 @Service
 public class ImageStorageService {
 
@@ -49,6 +50,7 @@ public class ImageStorageService {
         return "/uploads/" + folder + "/" + fileName;
     }
 
+    //Borrar
     public void delete(String relativePath){
         if (relativePath == null || relativePath.isBlank()){
             return;

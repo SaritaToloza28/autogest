@@ -10,7 +10,6 @@ import jakarta.persistence.*;
 )
 public class CarModel {
 
-    //Llave primaria
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
@@ -43,7 +42,12 @@ public class CarModel {
         this.brand = brand;
     }
 
-    //Dos modelos son el mismo si tienen el mismo id en la base de datos (igual que en SparePart).
+    //Texto para mostrar: "Mazda 3"
+    public String getDisplayName() {
+        return brand + " " + name;
+    }
+
+    //Dos modelos son el mismo si tienen el mismo id en la base de datos.
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -51,7 +55,7 @@ public class CarModel {
         return id != null && id.equals(other.getId());
     }
 
-    //Valor fijo para que el objeto no cambie de posición en un Set al recibir su id, y coincida con su proxy.
+    //Valor fijo para que el objeto no cambie de posición en un Set al recibir su id
     @Override
     public int hashCode() {
         return CarModel.class.hashCode();

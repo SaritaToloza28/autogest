@@ -8,7 +8,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-
+// Apenas arranca la app, revisa si el admin ya existe.
+// Si no está, lo crea de una con su clave.
 @Component
 public class DataInitializer implements CommandLineRunner {
 

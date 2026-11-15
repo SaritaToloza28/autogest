@@ -16,7 +16,6 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
-
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -34,15 +33,14 @@ public class SecurityConfig {
                         // ADMIN
                         .requestMatchers("/users/**", "/car-models/**").hasRole("ADMIN")
 
-                        // Repuestos: el mecánico solo consulta compatibles
-                        .requestMatchers("/spare-parts/compatible/**").hasAnyRole("MECHANIC", "ADMIN")
+                        // Repuestos: el mecánico ve los compatibles dentro de /repairs/assigned
                         .requestMatchers("/spare-parts/**").hasRole("ADMIN")
 
                         // OPERATOR
                         .requestMatchers("/vehicles/**").hasAnyRole("OPERATOR", "ADMIN")
 
                         // Reparaciones: primero la ruta específica del mecánico
-                        .requestMatchers("/repairs/assigned/**").hasAnyRole("MECHANIC", "ADMIN")
+                        .requestMatchers("/repairs/assigned/**").hasRole("MECHANIC")
                         .requestMatchers("/repairs/**").hasAnyRole("OPERATOR", "ADMIN")
 
                         // Cambiar mi contraseña y cualquier otra ruta: solo autenticados
@@ -69,11 +67,12 @@ public class SecurityConfig {
         return http.build();
     }
 
-    private String redirectByRole(Authentication authentication) {
+    //Vista principal de cada rol
+    public static String redirectByRole(Authentication authentication) {
         String authority = authentication.getAuthorities().iterator().next().getAuthority();
         return switch (authority) {
-            case "ROLE_ADMIN" -> "/users";
-            case "ROLE_OPERATOR" -> "/vehicles";
+            case "ROLE_ADMIN" -> "/repairs";
+            case "ROLE_OPERATOR" -> "/repairs";
             case "ROLE_MECHANIC" -> "/repairs/assigned";
             default -> "/";
         };

@@ -4,7 +4,7 @@ import java.util.regex.Pattern;
 
 public enum PlateColor {
 
-    //Deben iniciar de la misma forma
+    // Formato de cada tipo de placa: nombre, formato exacto de la placa, letras antes del guion y ejemplo
     COLOR_YELLOW("Amarilla (particular)", "^[A-Z]{3}-\\d{3}$", 3, "ABC-123"),
     COLOR_YELLOW_MOTORCYCLE("Amarilla (moto)", "^[A-Z]{3}-\\d{2}[A-Z]$", 3, "ABC-12D"),
     COLOR_WHITE("Blanca (público / oficial)", "^[A-Z]{3}-\\d{3}$", 3, "ABC-123"),
@@ -14,7 +14,6 @@ public enum PlateColor {
 
     private final String label;
     private final Pattern pattern;
-    //Cantidad de letras antes del guion
     private final int prefixLength;
     private final String example;
 
@@ -25,7 +24,7 @@ public enum PlateColor {
         this.example = example;
     }
 
-    //"abc 123", "ABC123" o "abc-123" -> "ABC-123"
+    //Permite con o sin guion, mayusculas y minusculas
     public String normalize(String rawPlate){
         String clean = rawPlate.toUpperCase().replaceAll("[^A-Z0-9]", "");
 

@@ -1,25 +1,25 @@
 package dev.saritacarolina.autogest.controller;
 
-import dev.saritacarolina.autogest.model.constant.RepairStatus;
+import dev.saritacarolina.autogest.model.constant.PlateColor;
 import dev.saritacarolina.autogest.model.constant.ServiceType;
 import dev.saritacarolina.autogest.model.dto.RepairDTO;
+import dev.saritacarolina.autogest.model.dto.VehicleDTO;
 import dev.saritacarolina.autogest.model.entity.Repair;
-import dev.saritacarolina.autogest.model.entity.SparePart;
+import dev.saritacarolina.autogest.model.entity.Vehicle;
 import dev.saritacarolina.autogest.service.AppUserService;
+import dev.saritacarolina.autogest.service.CarModelService;
 import dev.saritacarolina.autogest.service.RepairService;
-import dev.saritacarolina.autogest.service.SparePartService;
 import dev.saritacarolina.autogest.service.VehicleService;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
-//Rutas /repairs/** para OPERATOR y ADMIN; /repairs/assigned/** para MECHANIC y ADMIN (ver SecurityConfig)
+//TODO: revisar nuevos cambios(están más abajo, son varios)
+
+//Órdenes del operador
 @Controller
 @RequestMapping("/repairs")
 public class RepairController {
@@ -27,43 +27,65 @@ public class RepairController {
     private final RepairService service;
     private final VehicleService vehicleService;
     private final AppUserService appUserService;
-    private final SparePartService sparePartService;
+    private final CarModelService carModelService;
 
     public RepairController(RepairService service,
                             VehicleService vehicleService,
                             AppUserService appUserService,
-                            SparePartService sparePartService) {
+                            CarModelService carModelService) {
         this.service = service;
         this.vehicleService = vehicleService;
         this.appUserService = appUserService;
-        this.sparePartService = sparePartService;
+        this.carModelService = carModelService;
     }
 
-    // ---------- Operador: registro y seguimiento ----------
+    // ---------- Operador: dashboard de órdenes ----------
 
-    //Página completa: formulario vacío + tabla
+    //Página completa
     @GetMapping
     public String getRepairTemplate(Model model){
         model.addAttribute("repairs", service.findAllRepairs());
-        addFormData(model, emptyForm(), null);
-        return "repairs/list";
+        return "repairs/dashboard";
     }
 
-    //Fragmento: formulario vacío (botón "Cancelar")
+    //Fragmento: filas de la tabla filtradas por parte de la placa o del propietario
+    @GetMapping("/search")
+    public String searchRepairs(@RequestParam(required = false) String q, Model model){
+        model.addAttribute("repairs", service.searchRepairs(q));
+        return "repairs/dashboard :: orders-body";
+    }
+
+    //Fragmento: detalle de una orden
+    @GetMapping("/{id}/detail")
+    public String getDetail(@PathVariable("id") Long repairId, Model model){
+        try {
+            model.addAttribute("detail", service.findRepairById(repairId));
+            return "repairs/dashboard :: order-detail";
+        } catch (EntityNotFoundException e) {
+            return toast(model, "error", e.getMessage());
+        }
+    }
+
+    // ---------- Operador: modal (flotante) ----------
+
+    //Fragmento: modal vacío
     @GetMapping("/form")
     public String getEmptyForm(Model model){
-        addFormData(model, emptyForm(), null);
-        return "repairs/list :: form";
+        addFormData(model, RepairDTO.empty(), null);
+        addVehicleStep(model, "search", null, VehicleDTO.empty());
+        return "repairs/create :: modal";
     }
 
-    //Fragmento: formulario con los datos de la reparación a editar
+    //Fragmento: Carga el modal pero con los datos de una reparación existente para editarla.
     @GetMapping("/{id}/edit")
     public String getEditForm(@PathVariable("id") Long repairId, Model model){
         try {
-            addFormData(model, service.toDTO(service.findRepairById(repairId)), repairId);
-            return "repairs/list :: form";
+            Repair repair = service.findRepairById(repairId);
+
+            addFormData(model, service.toDTO(repair), repairId);
+            addVehicleStep(model, "locked", repair.getVehicle(), vehicleService.toDTO(repair.getVehicle()));
+            return "repairs/create :: modal";
         } catch (EntityNotFoundException e) {
-            addFormData(model, emptyForm(), null);
             return toast(model, "error", e.getMessage());
         }
     }
@@ -73,12 +95,11 @@ public class RepairController {
         try {
             service.createRepair(repairRequest);
 
-            addFormData(model, emptyForm(), null);
-            model.addAttribute("repairs", service.findAllRepairs());
-            return toast(model, "success", "Reparación registrada");
+            refreshDashboard(model);
+            model.addAttribute("closeModal", true);
+            return toast(model, "success", "Orden de servicio registrada");
         } catch (IllegalArgumentException | EntityNotFoundException e) {
-            //Se devuelve el formulario con lo que escribió el usuario
-            addFormData(model, repairRequest, null);
+            //el modal queda abierto con lo que escribió el usuario
             return toast(model, "error", e.getMessage());
         }
     }
@@ -90,11 +111,11 @@ public class RepairController {
         try {
             service.updateRepair(repairId, repairRequest);
 
-            addFormData(model, emptyForm(), null);
-            model.addAttribute("repairs", service.findAllRepairs());
-            return toast(model, "success", "Reparación actualizada");
+            refreshDashboard(model);
+            model.addAttribute("detail", service.findRepairById(repairId));
+            model.addAttribute("closeModal", true);
+            return toast(model, "success", "Orden de servicio actualizada");
         } catch (IllegalArgumentException | EntityNotFoundException e) {
-            addFormData(model, repairRequest, repairId);
             return toast(model, "error", e.getMessage());
         }
     }
@@ -103,141 +124,156 @@ public class RepairController {
     public String deleteRepair(@PathVariable("id") Long repairId, Model model){
         try {
             service.deleteRepair(repairId);
-            model.addAttribute("repairs", service.findAllRepairs());
-            return toast(model, "success", "Reparación eliminada");
+            refreshDashboard(model);
+            //el detalle vuelve a "Selecciona una orden..." porque la orden ya no existe
+            model.addAttribute("clearDetail", true);
+            return toast(model, "success", "Orden de servicio eliminada");
         } catch (IllegalArgumentException | EntityNotFoundException e) {
-            model.addAttribute("repairs", service.findAllRepairs());
             return toast(model, "error", e.getMessage());
         }
     }
 
+    //marca la orden como entregada al cliente y refresca la vista.
     @PostMapping("/{id}/deliver")
     public String deliverRepair(@PathVariable("id") Long repairId, Model model){
         try {
             service.deliverRepair(repairId);
-            model.addAttribute("repairs", service.findAllRepairs());
+            refreshDashboard(model);
+            model.addAttribute("detail", service.findRepairById(repairId));
             return toast(model, "success", "Vehículo entregado al cliente");
         } catch (IllegalArgumentException | EntityNotFoundException e) {
-            model.addAttribute("repairs", service.findAllRepairs());
             return toast(model, "error", e.getMessage());
         }
     }
 
+    //cancela la orden, devuelve los repuestos al stock y refresca la vista.
     @PostMapping("/{id}/cancel")
     public String cancelRepair(@PathVariable("id") Long repairId, Model model){
         try {
             service.cancelRepair(repairId);
-            model.addAttribute("repairs", service.findAllRepairs());
+            refreshDashboard(model);
+            model.addAttribute("detail", service.findRepairById(repairId));
             return toast(model, "success", "Reparación cancelada; los repuestos volvieron al stock");
         } catch (IllegalArgumentException | EntityNotFoundException e) {
-            model.addAttribute("repairs", service.findAllRepairs());
             return toast(model, "error", e.getMessage());
         }
     }
 
-    // ---------- Mecánico: reparaciones asignadas ----------
+    // ---------- Operador, modal ----------
 
-    @GetMapping("/assigned")
-    public String getAssignedTemplate(Authentication authentication, Model model){
-        addAssignedData(model, authentication);
-        return "repairs/assigned";
+    //busca un vehículo por placa y muestra si ya existe o si hay que registrarlo.
+    @GetMapping("/vehicle-lookup")
+    public String lookupVehicle(@RequestParam(required = false) PlateColor plateColor,
+                                @RequestParam(required = false) String licensePlate,
+                                Model model){
+        VehicleDTO typed = VehicleDTO.withPlate(licensePlate, plateColor);
+
+        if (plateColor == null && (licensePlate == null || licensePlate.isBlank())){
+            addVehicleStep(model, "search", null, VehicleDTO.empty());
+            return "repairs/vehicle-response";
+        }
+
+        try {
+            Optional<Vehicle> found = vehicleService.findVehicleByPlate(plateColor, licensePlate);
+
+            if (found.isPresent()){
+                showFoundVehicle(model, found.get(), plateColor);
+            } else {
+                //placa ya normalizada ("abc123" -> "ABC-123") para registrarla tal cual
+                VehicleDTO newVehicle = VehicleDTO.withPlate(vehicleService.normalizePlate(licensePlate, plateColor), plateColor);
+                addVehicleStep(model, "new", null, newVehicle);
+            }
+        } catch (IllegalArgumentException e) {
+            addVehicleStep(model, "search", null, typed);
+            model.addAttribute("vehicleError", e.getMessage());
+        }
+
+        return "repairs/vehicle-response";
     }
 
-    @PostMapping("/assigned/{id}/start")
-    public String startRepair(@PathVariable("id") Long repairId, Authentication authentication, Model model){
+    //registra un vehículo nuevo y lo deja seleccionado para la orden.
+    @PostMapping("/vehicle")
+    public String createVehicle(@ModelAttribute VehicleDTO vehicleRequest, Model model){
         try {
-            service.startRepair(repairId, authentication.getName(), isAdmin(authentication));
-            return assignedToast(model, authentication, "success", "Reparación iniciada");
+            //registerVehicle devuelve la entidad guardada, con el id que necesita la orden
+            Vehicle vehicle = vehicleService.registerVehicle(vehicleRequest);
+
+            showFoundVehicle(model, vehicle, vehicle.getPlateColor());
+            model.addAttribute("toastType", "success");
+            model.addAttribute("toastMessage", "Vehículo " + vehicle.getLicensePlate() + " registrado");
         } catch (IllegalArgumentException | EntityNotFoundException e) {
-            return assignedToast(model, authentication, "error", e.getMessage());
+            addVehicleStep(model, "new", null, vehicleRequest);
+            model.addAttribute("vehicleError", e.getMessage());
         }
+
+        return "repairs/vehicle-response";
     }
 
-    @PostMapping("/assigned/{id}/complete")
-    public String completeRepair(@PathVariable("id") Long repairId, Authentication authentication, Model model){
+    //actualiza los datos de un vehículo y lo vuelve a mostrar en el modal.
+    @PutMapping("/vehicle/{id}")
+    public String updateVehicle(@PathVariable("id") Long vehicleId,
+                                @ModelAttribute VehicleDTO vehicleRequest,
+                                Model model){
         try {
-            service.completeRepair(repairId, authentication.getName(), isAdmin(authentication));
-            return assignedToast(model, authentication, "success", "Reparación completada");
-        } catch (IllegalArgumentException | EntityNotFoundException e) {
-            return assignedToast(model, authentication, "error", e.getMessage());
-        }
-    }
+            vehicleService.updateVehicle(vehicleId, vehicleRequest);
 
-    @PostMapping("/assigned/{id}/parts")
-    public String addSparePart(@PathVariable("id") Long repairId,
-                               @RequestParam(required = false) Long sparePartId,
-                               @RequestParam(required = false) Integer quantity,
-                               Authentication authentication,
-                               Model model){
-        try {
-            service.addSparePart(repairId, sparePartId, quantity, authentication.getName(), isAdmin(authentication));
-            return assignedToast(model, authentication, "success", "Repuesto registrado");
+            Vehicle vehicle = vehicleService.findVehicleById(vehicleId);
+            showFoundVehicle(model, vehicle, vehicle.getPlateColor());
+            model.addAttribute("toastType", "success");
+            model.addAttribute("toastMessage", "Datos del vehículo actualizados");
         } catch (IllegalArgumentException | EntityNotFoundException e) {
-            return assignedToast(model, authentication, "error", e.getMessage());
+            try {
+                addVehicleStep(model, "found", vehicleService.findVehicleById(vehicleId), vehicleRequest);
+                model.addAttribute("vehicleError", e.getMessage());
+            } catch (EntityNotFoundException notFound) {
+                addVehicleStep(model, "search", null, VehicleDTO.empty());
+                model.addAttribute("vehicleError", notFound.getMessage());
+            }
         }
-    }
 
-    @DeleteMapping("/assigned/{id}/parts/{sparePartId}")
-    public String removeSparePart(@PathVariable("id") Long repairId,
-                                  @PathVariable("sparePartId") Long sparePartId,
-                                  Authentication authentication,
-                                  Model model){
-        try {
-            service.removeSparePart(repairId, sparePartId, authentication.getName(), isAdmin(authentication));
-            return assignedToast(model, authentication, "success", "Repuesto quitado; volvió al stock");
-        } catch (IllegalArgumentException | EntityNotFoundException e) {
-            return assignedToast(model, authentication, "error", e.getMessage());
-        }
+        return "repairs/vehicle-response";
     }
 
     // ---------- Auxiliares ----------
 
-    //El formulario siempre necesita los vehículos, mecánicos y tipos de servicio para los <select>
-    //repairId va aparte porque el DTO no tiene id (null = formulario de creación)
     private void addFormData(Model model, RepairDTO repair, Long repairId){
         model.addAttribute("repair", repair);
         model.addAttribute("repairId", repairId);
-        model.addAttribute("vehicles", vehicleService.findAllVehicles());
         model.addAttribute("mechanics", appUserService.findAllMechanics());
         model.addAttribute("serviceTypes", ServiceType.values());
     }
 
-    //Reparaciones del mecánico y, para las que están en progreso, los repuestos compatibles con su vehículo
-    private void addAssignedData(Model model, Authentication authentication){
-        List<Repair> repairs = service.findAssignedRepairs(authentication.getName(), isAdmin(authentication));
+    private void addVehicleStep(Model model, String step, Vehicle vehicle, VehicleDTO vehicleForm){
+        model.addAttribute("vehicleStep", step);
+        model.addAttribute("vehicle", vehicle);
+        model.addAttribute("vehicleForm", vehicleForm);
+        model.addAttribute("plateColors", PlateColor.values());
 
-        Map<Long, List<SparePart>> compatibleParts = new HashMap<>();
-
-        for (Repair repair : repairs){
-            if (repair.getStatus() == RepairStatus.IN_PROGRESS){
-                compatibleParts.put(repair.getId(),
-                        sparePartService.findCompatibleSpareParts(repair.getVehicle().getCarModel().getId()));
-            }
+        if (step.equals("new")){
+            model.addAttribute("carModelLabel", carModelService.findDisplayName(vehicleForm.carModelId()));
         }
+    }
 
-        model.addAttribute("repairs", repairs);
-        model.addAttribute("compatibleParts", compatibleParts);
+    //Vehículo encontrado: avisa si ya tiene una orden abierta o si el color guardado es otro
+    private void showFoundVehicle(Model model, Vehicle vehicle, PlateColor typedColor){
+        addVehicleStep(model, "found", vehicle, vehicleService.toDTO(vehicle));
+
+        if (service.hasOpenRepair(vehicle.getId())){
+            model.addAttribute("vehicleWarning", "Este vehículo ya tiene una orden pendiente o en progreso.");
+        } else if (typedColor != null && typedColor != vehicle.getPlateColor()){
+            model.addAttribute("vehicleWarning", "La placa está registrada como " + vehicle.getPlateColor().getLabel() + ".");
+        }
+    }
+
+    //Datos que se vuelven a pintar en el dashboard
+    private void refreshDashboard(Model model){
+        model.addAttribute("repairs", service.findAllRepairs());
+        model.addAttribute("oob", true);
     }
 
     private String toast(Model model, String type, String message){
         model.addAttribute("toastType", type);
         model.addAttribute("toastMessage", message);
         return "repairs/response";
-    }
-
-    private String assignedToast(Model model, Authentication authentication, String type, String message){
-        addAssignedData(model, authentication);
-        model.addAttribute("toastType", type);
-        model.addAttribute("toastMessage", message);
-        return "repairs/assigned-response";
-    }
-
-    private boolean isAdmin(Authentication authentication){
-        return authentication.getAuthorities().stream()
-                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
-    }
-
-    private RepairDTO emptyForm(){
-        return new RepairDTO("", null, null, null, null, null);
     }
 }

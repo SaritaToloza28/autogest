@@ -1,9 +1,12 @@
-<th:block th:if="${vehicle != null}">
-    <form th:replace="~{vehicles/list :: form}"></form>
-</th:block>
+<!-- Respuesta de crear, editar y eliminar vehículo (VehicleController.toast).
+     Todo llega con hx-swap-oob: cada bloque reemplaza su parte de la página. -->
 
-<th:block th:if="${vehicles != null}">
+<!-- oob=true: la tabla llega con hx-swap-oob y HTMX la cambia en la página -->
+<th:block th:if="${vehicles != null}" th:with="oob=true" xmlns:th="http://www.thymeleaf.org">
     <table th:replace="~{vehicles/list :: table}"></table>
 </th:block>
+
+<!-- Cierra el modal vaciando su contenedor (solo si se guardó bien) -->
+<div th:if="${closeModal != null}" id="modal-container" hx-swap-oob="true"></div>
 
 <div th:replace="~{fragments/toast :: toast}"></div>

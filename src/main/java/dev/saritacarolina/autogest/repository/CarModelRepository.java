@@ -11,10 +11,9 @@ import java.util.List;
 
 @Repository
 public interface CarModelRepository extends JpaRepository<CarModel, Long> {
-    //Listado ordenado para tablas y <select>
+    //Listado ordenado para tablas
     List<CarModel> findAllByOrderByBrandAscNameAsc();
 
-    //TODO: repasar bien
     //Buscador: busca en "marca modelo" juntos, así "mazda 3" encuentra Mazda 3 (sin distinguir mayúsculas)
     @Query("SELECT c FROM CarModel c WHERE LOWER(CONCAT(c.brand, ' ', c.name)) LIKE LOWER(CONCAT('%', :text, '%')) ORDER BY c.brand, c.name")
     List<CarModel> searchByText(@Param("text") String text);

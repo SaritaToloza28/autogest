@@ -157,7 +157,6 @@ body {
 /* Página más ancha para tablas con muchas columnas */
 .container-wide { max-width: 1100px; }
 
-/* Campo que ocupa todo el ancho del grid */
 .field-full { grid-column: 1 / -1; }
 
 .field textarea {

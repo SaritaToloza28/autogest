@@ -35,10 +35,6 @@ public class SparePartService {
         return this.repository.findAllByOrderByNameAsc();
     }
 
-    public List<SparePart> findCompatibleSpareParts(Long carModelId){
-        return this.repository.findByCompatibleModelsIdOrderByNameAsc(carModelId);
-    }
-
     public SparePart findSparePartById(Long sparePartId) throws EntityNotFoundException {
         return this.repository.findWithCompatibleModelsById(sparePartId)
                 .orElseThrow(() -> new EntityNotFoundException("Repuesto con id " + sparePartId + " no encontrado"));
@@ -151,7 +147,6 @@ public class SparePartService {
     }
 
     private void validateRequest(SparePartDTO request){
-        //nombre obligatorio
         if (request.name() == null || request.name().isBlank()){
             throw new IllegalArgumentException("El nombre del repuesto es obligatorio");
         }
@@ -160,17 +155,14 @@ public class SparePartService {
             throw new IllegalArgumentException("El nombre del repuesto no puede superar 100 caracteres");
         }
 
-        //descripción opcional
         if (request.description() != null && request.description().trim().length() > 500){
             throw new IllegalArgumentException("La descripción no puede superar 500 caracteres");
         }
 
-        //precio mayor a 0
         if (request.price() == null || request.price().compareTo(BigDecimal.ZERO) <= 0){
             throw new IllegalArgumentException("El precio debe ser mayor a 0");
         }
 
-        //la columna price es numeric(12,2): máximo 2 decimales y 10 dígitos enteros
         if (request.price().stripTrailingZeros().scale() > 2){
             throw new IllegalArgumentException("El precio no puede tener más de 2 decimales");
         }
@@ -179,17 +171,14 @@ public class SparePartService {
             throw new IllegalArgumentException("El precio no puede superar 9.999.999.999,99");
         }
 
-        //EAN obligatorio
         if (request.eanCode() == null || request.eanCode().isBlank()){
             throw new IllegalArgumentException("El código EAN es obligatorio");
         }
 
-        //stock no negativo
         if (request.stock() == null || request.stock() < 0){
             throw new IllegalArgumentException("El stock no puede ser negativo");
         }
 
-        //al menos un modelo compatible
         if (request.compatibleModelIds() == null || request.compatibleModelIds().isEmpty()){
             throw new IllegalArgumentException("Debe seleccionar al menos un modelo compatible");
         }

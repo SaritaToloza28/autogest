@@ -1,9 +1,20 @@
-<th:block th:if="${repair != null}">
-    <form th:replace="~{repairs/list :: form}"></form>
+
+<!-- Respuesta de las acciones del dashboard (crear, editar, entregar, cancelar).
+     Todoo llega con hx-swap-oob: cada bloque reemplaza su parte de la página. -->
+
+<!-- KPIs y filas de la tabla (oob = true en refreshDashboard) -->
+<th:block th:if="${oob != null}">
+    <section th:replace="~{repairs/dashboard :: kpis}"></section>
+    <!-- Un <tbody> no puede ir suelto: HTMX lo acepta dentro de <template> -->
+    <template><tbody th:replace="~{repairs/dashboard :: orders-body}"></tbody></template>
 </th:block>
 
-<th:block th:if="${repairs != null}">
-    <table th:replace="~{repairs/list :: table}"></table>
+<!-- Detalle actualizado (entregar, cancelar, editar) o vacío (eliminar: clearDetail) -->
+<th:block th:if="${oob != null and (detail != null or clearDetail != null)}">
+    <section th:replace="~{repairs/dashboard :: order-detail}"></section>
 </th:block>
+
+<!-- Cierra el modal vaciando su contenedor -->
+<div th:if="${closeModal != null}" id="modal-container" hx-swap-oob="true"></div>
 
 <div th:replace="~{fragments/toast :: toast}"></div>

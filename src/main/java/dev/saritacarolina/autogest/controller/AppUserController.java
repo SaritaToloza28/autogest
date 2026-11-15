@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 
+//CRUD usuarios
 @Controller
 @RequestMapping("/users")
 public class AppUserController {
@@ -96,14 +97,17 @@ public class AppUserController {
 
     // ---------- Auxiliares ----------
 
+    //Devuelve un AppUserDTO vacío para que el formulario de usuarios no falle
     private AppUserDTO emptyAppUser() {
         return new AppUserDTO(null, null, null, null);
     }
 
+    // Copia los datos que se ingresaron, pero borra la contraseña por seguridad
     private AppUserDTO withoutPassword(AppUserDTO dto) {
         return new AppUserDTO(dto.username(), dto.fullName(), null, dto.role());
     }
 
+    // Prepara el mensaje de alerta
     private void addToast(Model model, String type, String message) {
         model.addAttribute("toastType", type);
         model.addAttribute("toastMessage", message);

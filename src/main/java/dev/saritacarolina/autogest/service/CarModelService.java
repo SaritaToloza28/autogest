@@ -46,6 +46,17 @@ public class CarModelService {
                 .orElseThrow(() -> new EntityNotFoundException("Modelo con id " + carModelId + " no encontrado"));
     }
 
+    //Texto del buscador de modelo al editar
+    public String findDisplayName(Long carModelId){
+        if (carModelId == null){
+            return "";
+        }
+
+        return this.repository.findById(carModelId)
+                .map(CarModel::getDisplayName)
+                .orElse("");
+    }
+
     public CarModelDTO createCarModel(CarModelDTO carModelRequest) throws IllegalArgumentException {
         validateRequest(carModelRequest);
 
@@ -108,7 +119,6 @@ public class CarModelService {
     }
 
     private void validateRequest(CarModelDTO request){
-        //nombre obligatorio
         if (request.name() == null || request.name().isBlank()){
             throw new IllegalArgumentException("El nombre del modelo es obligatorio");
         }
@@ -117,7 +127,6 @@ public class CarModelService {
             throw new IllegalArgumentException("El nombre del modelo no puede superar 60 caracteres");
         }
 
-        //marca obligatoria
         if (request.brand() == null || request.brand().isBlank()){
             throw new IllegalArgumentException("La marca del modelo es obligatoria");
         }

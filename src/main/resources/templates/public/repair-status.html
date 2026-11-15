@@ -27,7 +27,7 @@
         <button type="submit" class="btn btn-primary btn-block">Consultar</button>
     </form>
 
-    <!-- Solo datos de la reparación: nada del propietario ni del mecánico -->
+    <!-- "repairs" son RepairStatusDTO: solo datos de la reparación, nada del propietario ni del mecánico -->
     <div id="results" th:fragment="results">
         <p class="empty" th:if="${message != null}" th:text="${message}">Escribe la placa del vehículo</p>
 
@@ -47,9 +47,9 @@
             <tbody>
             <tr th:each="r : ${repairs}">
                 <td th:text="${#temporals.format(r.repairDate, 'dd/MM/yyyy')}">20/10/2026</td>
-                <td th:text="|${r.vehicle.licensePlate} — ${r.vehicle.carModel.brand} ${r.vehicle.carModel.name}|">ABC-123 — Mazda 3</td>
+                <td th:text="|${r.licensePlate} — ${r.carModelName}|">ABC-123 — Mazda 3</td>
                 <td th:text="${r.reason}">Revisión de frenos</td>
-                <td><span class="tag" th:text="${r.status.label}">Pendiente</span></td>
+                <td><span class="tag" th:text="${r.statusLabel}">Pendiente</span></td>
             </tr>
             </tbody>
         </table>

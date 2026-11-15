@@ -3,6 +3,8 @@ package dev.saritacarolina.autogest.repository;
 import dev.saritacarolina.autogest.model.entity.Vehicle;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -23,4 +25,12 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
     boolean existsByLicensePlateAndIdNot(String licensePlate, Long id);
 
     boolean existsByCarModelId(Long carModelId);
+
+    //Buscador de la tabla
+    @EntityGraph(attributePaths = "carModel")
+    @Query("SELECT v FROM Vehicle v " +
+            "WHERE (:plate <> '' AND REPLACE(v.licensePlate, '-', '') LIKE CONCAT('%', :plate, '%')) " +
+            "OR LOWER(v.ownerName) LIKE LOWER(CONCAT('%', :text, '%')) " +
+            "ORDER BY v.licensePlate ASC")
+    List<Vehicle> searchByText(@Param("plate") String plate, @Param("text") String text);
 }
