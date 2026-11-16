@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Consultar mi reparación', 'public')}">
+    <!-- Solo para la vista previa sin Spring (ver fragments/head.html) -->
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="../../static/images/logo-taller.png">
+    <title>Consultar mi reparación | Autogest</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="../../static/css/base.css">
+    <link rel="stylesheet" href="../../static/css/public.css">
+    <script defer src="../../static/js/htmx.min.js"></script>
+    <script defer src="../../static/js/lucide.min.js"></script>
+    <script defer src="../../static/js/public.js"></script>
+</head>
+<!-- public-home: fondo con la foto del taller (public.css). Sin pie de página: solo la consulta. -->
+<body class="public-page public-home public-consult">
+
+<a class="back-link" href="index.html" th:href="@{/}">
+    <i data-lucide="arrow-left"></i> Volver al inicio
+</a>
+
+<main class="home-hero">
+
+    <!-- ======================= BÚSQUEDA (izquierda) ======================= -->
+    <section class="home-search" aria-labelledby="home-title">
+        <h1 id="home-title">Sigue tu reparación<br>sin llamar al taller</h1>
+        <p class="home-lead">Escribe la placa de tu vehículo y consulta si tu reparación
+            está en proceso, terminada o cancelada.</p>
+
+        <!-- GET: no modifica datos, así que no necesita token CSRF.
+             BACKEND: GET /repair-status/search?licensePlate=ABC-123&plateColor=COLOR_YELLOW
+             responde con el fragmento "public/repair-status :: results" (el mismo nombre de antes).
+             plateColor es nuevo: llega desde este formulario, úsalo si el backend lo necesita. -->
+        <form id="plate-search" class="plate-search"
+              hx-get="/repair-status/search"
+              th:hx-get="@{/repair-status/search}"
+              hx-target="#results"
+              hx-swap="outerHTML">
+
+            <label class="sr-only" for="licensePlate">Placa del vehículo</label>
+
+            <!-- Placa: public.js detecta el tipo mientras se escribe y cambia
+                 data-plate (none | COLOR_YELLOW | COLOR_WHITE | COLOR_BLUE | COLOR_GREEN |
+                 COLOR_RED | COLOR_YELLOW_MOTORCYCLE); public.css pinta el color. -->
+            <div class="plate-input" id="plate-input" data-plate="none">
+                <span class="plate-input-band">COLOMBIA</span>
+                <input id="licensePlate" name="licensePlate" type="text" required
+                       maxlength="7" placeholder="ABC-123"
+                       autocomplete="off" autocapitalize="characters" spellcheck="false"
+                       aria-describedby="plate-type">
+            </div>
+
+            <!-- Color que se envía al backend (lo llena public.js) -->
+            <input type="hidden" id="plateColor" name="plateColor" value="">
+
+            <p class="plate-type" id="plate-type" aria-live="polite">
+                Escribe la placa: identificamos el tipo por su formato.
+            </p>
+
+            <!-- Si el formato sirve para varios colores (ABC-123 = amarilla o blanca),
+                 public.js muestra aquí los botones para escoger -->
+            <div class="plate-choices" id="plate-choices" hidden></div>
+
+            <button type="submit" class="btn-submit">Consultar mi reparación</button>
+        </form>
+
+        <!-- Placas de ejemplo: al hacer clic se escriben en el buscador -->
+        <div class="plate-examples">
+            <span>Prueba con una placa de ejemplo:</span>
+            <div class="plate-examples-grid">
+                <button type="button" data-example="ABC-123" data-color="COLOR_YELLOW">
+                    <span class="plate-badge plate-COLOR_YELLOW">ABC-123</span><small>Amarilla</small>
+                </button>
+                <button type="button" data-example="BCD-234" data-color="COLOR_WHITE">
+                    <span class="plate-badge plate-COLOR_WHITE">BCD-234</span><small>Blanca</small>
+                </button>
+                <button type="button" data-example="T-1234" data-color="COLOR_RED">
+                    <span class="plate-badge plate-COLOR_RED">T-1234</span><small>Roja</small>
+                </button>
+                <button type="button" data-example="CD-1234" data-color="COLOR_BLUE">
+                    <span class="plate-badge plate-COLOR_BLUE">CD-1234</span><small>Azul</small>
+                </button>
+                <button type="button" data-example="R-12345" data-color="COLOR_GREEN">
+                    <span class="plate-badge plate-COLOR_GREEN">R-12345</span><small>Verde</small>
+                </button>
+                <button type="button" data-example="BBB-52C" data-color="COLOR_YELLOW_MOTORCYCLE">
+                    <span class="plate-badge plate-COLOR_YELLOW_MOTORCYCLE">BBB-52C</span><small>Moto</small>
+                </button>
+            </div>
+            <p class="plate-formats">
+                Formatos: ABC-123 (amarilla y blanca), R-12345 o S-12345 (verde),
+                CD-1234, CC-1234 u OI-1234 (azul), T-1234 (roja), ABC-12D (moto).
+            </p>
+        </div>
+
+    </section>
+
+    <!-- ======================= RESULTADO (derecha) ======================= -->
+    <div class="home-result">
+        <!-- El fragmento "results" usa estos datos del modelo (RepairStatusController):
+             · repairs      -> List<RepairStatusDTO> de la placa, de la MÁS RECIENTE a la más antigua
+                               (la primera se resalta como la actual). null = aún no se consulta.
+             · licensePlate -> la placa consultada (para el mensaje "no encontramos…").
+             · message      -> opcional, un aviso del servidor (por ejemplo, placa inválida).
+             Solo datos de la reparación: nada del propietario ni del mecánico.
+             GET /repair-status no debe enviar "repairs" para que se vea el estado inicial. -->
+        <section id="results" class="status-card" th:fragment="results" aria-live="polite">
+
+            <!-- 1. Aún no se ha consultado (hidden: oculto en la vista previa) -->
+            <div class="status-empty" th:if="${repairs == null and message == null}" hidden th:hidden="${false}">
+                <i data-lucide="search"></i>
+                <p>Escribe la placa de tu vehículo y aquí verás el estado de su reparación.</p>
+            </div>
+
+            <!-- 2. Aviso del servidor -->
+            <div class="status-empty" th:if="${message != null}" hidden th:hidden="${false}">
+                <i data-lucide="info"></i>
+                <p th:text="${message}">La placa no tiene un formato válido</p>
+            </div>
+
+            <!-- 3. Sin reparaciones para esa placa -->
+            <div class="status-empty" th:if="${repairs != null and #lists.isEmpty(repairs)}" hidden th:hidden="${false}">
+                <i data-lucide="search-x"></i>
+                <p>No encontramos reparaciones para la placa
+                    <strong th:text="${licensePlate}">ABC-123</strong>.</p>
+            </div>
+
+            <!-- 4. Reparaciones encontradas -->
+            <th:block th:if="${repairs != null and !#lists.isEmpty(repairs)}"
+                      th:with="first=${repairs[0]}">
+                <!-- Datos del vehículo desde la primera reparación (RepairStatusDTO: sin datos del propietario) -->
+                <header class="status-head">
+                    <div>
+                        <span class="status-kicker">Estado de tu vehículo</span>
+                        <h2 th:text="${first.carModelName}">Chevrolet Onix</h2>
+                    </div>
+                    <span class="plate-badge plate-COLOR_YELLOW"
+                          th:class="|plate-badge plate-${first.plateColor}|"
+                          th:text="${first.licensePlate}">ABC-123</span>
+                </header>
+
+                <ol class="status-list">
+                    <li class="status-item current" th:each="r, it : ${repairs}"
+                        th:class="${it.first} ? 'status-item current' : 'status-item'">
+                        <div class="status-row">
+                            <span class="status status-IN_PROGRESS"
+                                  th:class="|status status-${r.status.name()}|"
+                                  th:text="${r.status.label}">En proceso</span>
+                            <time th:text="${#temporals.format(r.repairDate, 'd ''de'' MMMM ''de'' yyyy')}">14 de noviembre de 2026</time>
+                        </div>
+                        <p th:text="${r.reason}">Cambio de pastillas de freno delanteras</p>
+                    </li>
+
+                    <!-- Filas de ejemplo: solo en la vista estática, Spring las elimina -->
+                    <li class="status-item" th:remove="all">
+                        <div class="status-row">
+                            <span class="status status-COMPLETED">Terminado</span>
+                            <time>2 de septiembre de 2026</time>
+                        </div>
+                        <p>Revisión de suspensión</p>
+                    </li>
+                    <li class="status-item" th:remove="all">
+                        <div class="status-row">
+                            <span class="status status-CANCELLED">Cancelado</span>
+                            <time>15 de junio de 2026</time>
+                        </div>
+                        <p>Asistencia en carretera: cambio de batería</p>
+                    </li>
+                </ol>
+            </th:block>
+        </section>
+        <p class="status-caption">Resultado de la consulta</p>
+    </div>
+</main>
+
+</body>
+</html>

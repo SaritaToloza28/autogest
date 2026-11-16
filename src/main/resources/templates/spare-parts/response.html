@@ -1,0 +1,24 @@
+<!-- Respuesta de POST /spare-parts, POST /spare-parts/{id} y DELETE /spare-parts/{id}.
+     Todo llega con hx-swap-oob: cada bloque reemplaza su parte de la página. -->
+
+<!-- Tabla y KPIs. oob=true: solo en esta respuesta llevan hx-swap-oob (en la página no, por el hx-boost del menú) -->
+<th:block th:if="${spareParts != null}" th:with="oob=true">
+    <table th:replace="~{spare-parts/list :: table}"></table>
+    <section th:replace="~{spare-parts/list :: kpis}"></section>
+</th:block>
+
+<!-- Vista de referencia actualizada (después de editar) -->
+<th:block th:if="${oob != null and detail != null}">
+    <aside th:replace="~{spare-parts/list :: detail}"></aside>
+</th:block>
+
+<!-- Guardado: cierra el modal vaciando su contenedor.
+     Con errores: vuelve a pintar el modal con los datos escritos. -->
+<div id="modal-container" hx-swap-oob="true"
+     th:if="${closeModal != null or sparePart != null}">
+    <th:block th:if="${closeModal == null and sparePart != null}">
+        <dialog th:replace="~{spare-parts/form :: form}"></dialog>
+    </th:block>
+</div>
+
+<div th:replace="~{fragments/toast :: toast}"></div>

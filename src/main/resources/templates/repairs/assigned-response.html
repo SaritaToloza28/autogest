@@ -1,0 +1,19 @@
+<!-- Respuesta de las acciones del mecánico (iniciar, terminar, agregar o quitar repuestos).
+     Todo llega con hx-swap-oob: cada bloque reemplaza su parte de la página.
+     MechanicRepairController envía oob = true, repairs (las órdenes del mecánico),
+     detail (la orden actualizada), compatibleParts (repuestos compatibles con su modelo)
+     y toastMessage / toastType (RF-17). -->
+
+<!-- Resumen y filas de la tabla -->
+<th:block th:if="${oob != null}">
+    <section th:replace="~{repairs/assigned :: kpis}"></section>
+    <!-- Un <tbody> no puede ir suelto: HTMX lo acepta dentro de <template> -->
+    <template><tbody th:replace="~{repairs/assigned :: assigned-body}"></tbody></template>
+</th:block>
+
+<!-- Detalle actualizado -->
+<th:block th:if="${oob != null and detail != null}">
+    <section th:replace="~{repairs/assigned :: order-detail}"></section>
+</th:block>
+
+<div th:replace="~{fragments/toast :: toast}"></div>

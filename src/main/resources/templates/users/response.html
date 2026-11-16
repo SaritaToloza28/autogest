@@ -1,0 +1,10 @@
+<th:block th:if="${appUser != null}">
+    <form th:replace="~{users/list :: user-form}"></form>
+</th:block>
+
+<!-- oob=true: solo en esta respuesta la tabla lleva hx-swap-oob (en la página no, por el hx-boost del menú) -->
+<th:block th:if="${appUsers != null}" th:with="oob=true">
+    <table th:replace="~{users/list :: user-table}"></table>
+</th:block>
+
+<div th:replace="~{fragments/toast :: toast}"></div>

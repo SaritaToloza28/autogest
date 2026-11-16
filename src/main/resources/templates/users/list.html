@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/head :: head('Usuarios y roles', 'panel')}">
+    <!-- Solo para la vista previa sin Spring (ver fragments/head.html) -->
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="../../static/images/logo-taller.png">
+    <title>Usuarios y roles | Autogest</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="../../static/css/base.css">
+    <link rel="stylesheet" href="../../static/css/panel.css">
+    <script defer src="../../static/js/htmx.min.js"></script>
+    <script defer src="../../static/js/lucide.min.js"></script>
+    <script defer src="../../static/js/panel.js"></script>
+</head>
+
+<body class="dashboard-body preview-admin">
+
+<!-- Notificaciones (fragments/toast.html las agrega aquí) -->
+<div id="toast-container" role="status" aria-live="polite"></div>
+
+<div class="app-shell">
+
+    <aside class="sidebar"
+           th:replace="~{fragments/sidebar :: sidebar('users')}"
+           hx-get="../fragments/sidebar.html"
+           hx-select=".sidebar"
+           hx-trigger="load"
+           hx-swap="outerHTML"></aside>
+
+    <main id="main-content" class="main-content">
+
+        <header class="top-header">
+            <!-- Saludo según la hora: Spring lo reemplaza por fragments/header :: welcome -->
+            <div class="welcome"
+                 th:replace="~{fragments/header :: welcome}"
+                 hx-get="../fragments/header.html"
+                 hx-select=".welcome"
+                 hx-trigger="load"
+                 hx-swap="outerHTML"></div>
+            <div class="header-right">
+                <!-- Rol de la sesión: fragments/header :: role -->
+                <span class="role-badge"
+                      th:replace="~{fragments/header :: role}"
+                      hx-get="../fragments/header.html"
+                      hx-select=".role-badge"
+                      hx-trigger="load"
+                      hx-swap="outerHTML"></span>
+            </div>
+        </header>
+
+        <section class="page-title-section">
+            <div>
+                <span class="subtitle">ADMINISTRACIÓN</span>
+                <h1>Usuarios y roles</h1>
+                <p class="subtitle">Crea las cuentas del equipo y asigna el rol de cada persona.</p>
+            </div>
+        </section>
+
+        <!-- Formulario: crear y editar (users/response lo devuelve con el toast) -->
+        <form id="user-form" class="card form-card" th:fragment="user-form" method="post"
+              hx-post="/users"
+              th:hx-post="${appUserId == null} ? @{/users}"
+              th:hx-put="${appUserId != null} ? @{/users/{id}(id=${appUserId})}"
+              hx-target="this"
+              hx-swap="outerHTML">
+
+            <div class="form-card-header">
+                <h2 th:text="${appUserId == null} ? 'Nuevo usuario' : 'Editar usuario'">Nuevo usuario</h2>
+            </div>
+
+            <div class="form-grid">
+                <div class="field">
+                    <label for="username">Usuario</label>
+                    <input id="username" type="text" name="username" maxlength="50" required
+                           value="" th:value="${appUser.username}">
+                </div>
+
+                <div class="field">
+                    <label for="fullName">Nombre completo</label>
+                    <input id="fullName" type="text" name="fullName" maxlength="100" required
+                           value="" th:value="${appUser.fullName}">
+                </div>
+
+                <div class="field">
+                    <label for="password">Contraseña</label>
+                    <input id="password" type="password" name="password" maxlength="72"
+                           placeholder="Mínimo 8 caracteres"
+                           th:placeholder="${appUserId == null} ? 'Mínimo 8 caracteres' : 'Vacío = conservar la actual'"
+                           th:required="${appUserId == null}">
+                </div>
+
+                <div class="field">
+                    <label for="role">Rol</label>
+                    <select id="role" name="role" required>
+                        <option value="">Seleccione...</option>
+                        <option th:each="r : ${roles}"
+                                th:value="${r}"
+                                th:text="${r.label}"
+                                th:selected="${r == appUser.role}">Administrador</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-outline" th:if="${appUserId != null}"
+                        hx-get="/users/form"
+                        th:hx-get="@{/users/form}"
+                        hx-target="#user-form"
+                        hx-swap="outerHTML">Cancelar</button>
+
+                <button type="submit" class="btn btn-primary">
+                    <i data-lucide="save"></i>
+                    <span th:text="${appUserId == null} ? 'Guardar' : 'Actualizar'">Guardar</span>
+                </button>
+            </div>
+        </form>
+
+        <!-- Tabla (vuelve con hx-swap-oob después de guardar o eliminar) -->
+        <section class="table-container card" aria-label="Usuarios">
+            <table id="user-table" class="custom-table static-rows" th:fragment="user-table"
+                   th:hx-swap-oob="${oob} ? 'true'">
+                <thead>
+                <tr>
+                    <th scope="col">Usuario</th>
+                    <th scope="col">Nombre</th>
+                    <th scope="col">Rol</th>
+                    <th scope="col"><span class="sr-only">Acciones</span></th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="u : ${appUsers}">
+                    <td><strong th:text="${u.username}">admin</strong></td>
+                    <td th:text="${u.fullName}">Administrador</td>
+                    <td><span class="badge badge-role" th:text="${u.role.label}">Administrador</span></td>
+                    <td>
+                        <div class="row-actions">
+                            <button type="button" class="btn btn-outline btn-sm"
+                                    hx-get="/users/1/edit"
+                                    th:hx-get="@{/users/{id}/edit(id=${u.id})}"
+                                    hx-target="#user-form"
+                                    hx-swap="outerHTML">
+                                <i data-lucide="pencil"></i> Editar
+                            </button>
+
+                            <button type="button" class="btn btn-danger-soft btn-sm"
+                                    hx-delete="/users/1"
+                                    th:hx-delete="@{/users/{id}(id=${u.id})}"
+                                    hx-swap="none"
+                                    hx-confirm="¿Eliminar este usuario?"
+                                    th:hx-confirm="|¿Eliminar a ${u.fullName}?|">
+                                <i data-lucide="trash-2"></i> Eliminar
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- Fila de ejemplo: solo en la vista estática, Spring la elimina -->
+                <tr th:remove="all">
+                    <td><strong>mecanico1</strong></td>
+                    <td>Juan Pérez</td>
+                    <td><span class="badge badge-role">Mecánico</span></td>
+                    <td>
+                        <div class="row-actions">
+                            <button type="button" class="btn btn-outline btn-sm"><i data-lucide="pencil"></i> Editar</button>
+                            <button type="button" class="btn btn-danger-soft btn-sm"><i data-lucide="trash-2"></i> Eliminar</button>
+                        </div>
+                    </td>
+                </tr>
+
+                <tr class="empty-row" th:if="${#lists.isEmpty(appUsers)}">
+                    <td colspan="4">No hay usuarios registrados</td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+</div>
+
+</body>
+</html>

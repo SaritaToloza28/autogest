@@ -1,0 +1,598 @@
+/* ==========================================================
+   Autogest · Portal público (public/index.html y public/repair-status.html)
+   El buscador con forma de placa de repair-status.html usa public.js.
+   Sin sesión. Usa las variables, campos, botones y toasts de base.css
+   y repite el fondo lavanda del login para que se vean de la misma familia.
+   ========================================================== */
+
+/* Columna: la tarjeta se centra en el espacio libre y el pie (si hay) queda abajo */
+body.public-page {
+    margin: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 2rem;
+    font-family: var(--font-body);
+    color: var(--ink);
+    background:
+        radial-gradient(ellipse 60% 50% at 50% 30%, rgba(255, 255, 255, .85), transparent 70%),
+        linear-gradient(135deg, var(--bg) 0%, var(--bg-2) 100%);
+    background-attachment: fixed;
+}
+
+/* Página de inicio: foto del taller (css/images/taller.jpg) con un velo lavanda
+   encima, para que la tarjeta y los textos se sigan leyendo bien */
+body.public-home {
+    background:
+        linear-gradient(180deg, rgba(243, 238, 249, .78) 0%, rgba(233, 221, 255, .86) 100%),
+        url("images/taller.jpg") center / cover no-repeat fixed;
+}
+body.public-consult { padding-bottom: 2.5rem; }
+
+/* Tarjeta de vidrio con los engranajes detrás */
+.public-card {
+    margin: auto;                     /* centrada en el espacio libre */
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    width: min(420px, 100% - 2rem);
+    padding: 2.25rem 2rem 1.75rem;
+    background: var(--glass);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(128, 52, 210, .18);
+    border-radius: 18px;
+    box-shadow: 0 24px 64px rgba(23, 9, 51, .16);
+    text-align: center;
+}
+
+.public-card.wide { width: min(760px, 100% - 2rem); }
+
+/* Inicio: la tarjeta baja un poco (el pie de página le quita el espacio libre de abajo) */
+body.public-home:not(.public-consult) .public-card { margin-top: clamp(2rem, 10vh, 6rem); }
+
+.public-card form,
+.public-card .results { text-align: left; }
+
+.public-card .brand { color: var(--ink); }
+
+/* Logo del taller encima del nombre */
+.public-logo {
+    display: block;
+    width: 76px;
+    height: 76px;
+    margin: 0 auto .5rem;
+    filter: drop-shadow(0 6px 14px rgba(128, 52, 210, .25));
+}
+.public-card .brand span { color: var(--neon); }
+
+/* Botones del inicio: uno principal (btn-submit de base.css) y uno secundario */
+.public-actions {
+    display: grid;
+    gap: .75rem;
+    margin-top: .5rem;
+}
+
+.public-actions .btn-submit {
+    display: block;
+    text-align: center;
+    text-decoration: none;
+}
+
+.btn-ghost {
+    display: block;
+    padding: .9rem 1rem;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1rem;
+    text-align: center;
+    text-decoration: none;
+    color: var(--neon);
+    background: #fff;
+    border: 1px solid var(--edge);
+    border-radius: 8px;
+    transition: border-color .15s, background .15s;
+}
+
+.btn-ghost:hover { border-color: var(--neon); background: var(--bg); }
+
+.btn-ghost:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 3px;
+}
+
+.uppercase { text-transform: uppercase; letter-spacing: .04em; }
+
+/* ---------- Resultados de la consulta por placa ---------- */
+.results { margin-top: 1.5rem; }
+.results:empty { display: none; }
+
+.results .empty {
+    margin: 0;
+    padding: 1rem;
+    text-align: center;
+    color: var(--ink-soft);
+    background: rgba(243, 238, 249, .7);
+    border-radius: 10px;
+}
+
+.results-table-wrap { overflow-x: auto; }
+
+.results-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .9rem;
+}
+
+.results-table th {
+    padding: .6rem .75rem;
+    text-align: left;
+    font-family: var(--font-display);
+    font-size: .78rem;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--edge);
+}
+
+.results-table td {
+    padding: .7rem .75rem;
+    vertical-align: middle;
+    border-bottom: 1px solid rgba(174, 157, 204, .35);
+}
+
+/* Placa colombiana (colores en base.css) */
+.plate-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border: 1.5px solid var(--ink);
+    border-radius: 5px;
+    font-weight: 800;
+    font-size: .85rem;
+    letter-spacing: .06em;
+}
+/* La placa de moto no está en base.css (allí solo están los 5 colores) */
+.plate-COLOR_YELLOW_MOTORCYCLE { background: var(--plate-yellow); color: #000; }
+
+/* Estado de la reparación */
+.status {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: .78rem;
+    font-weight: 600;
+    white-space: nowrap;
+    background: #E9DDFF;
+    color: #6a24b8;
+}
+.status-PENDING     { background: #fef3c7; color: #92600a; }
+.status-IN_PROGRESS { background: #E9DDFF; color: #6a24b8; }
+.status-COMPLETED   { background: #dcfce7; color: #166534; }
+.status-DELIVERED   { background: #efeaf6; color: var(--ink-soft); }
+.status-CANCELLED   { background: #fde8ef; color: var(--danger); }
+
+@media (max-width: 480px) {
+    .public-card { padding: 1.75rem 1.25rem 1.5rem; }
+}
+
+
+/* ==========================================================
+   CONSULTA DE REPARACIÓN (public/repair-status.html)
+   Búsqueda por placa (izquierda) + resultado (derecha), con la foto del taller de fondo.
+   Mismos colores claros del portal: vidrio blanco, lavanda y morado neón.
+   ========================================================== */
+/* hidden siempre gana (lo usa la vista previa y public.js) */
+[hidden] { display: none !important; }
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+/* ---------- Volver al inicio (repair-status.html) ---------- */
+.back-link {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    margin: 0 0 0 max(1.5rem, calc((100% - 1100px) / 2));
+    padding: .45rem .9rem;
+    border-radius: 999px;
+    font-size: .88rem;
+    font-weight: 600;
+    color: var(--neon);
+    text-decoration: none;
+    background: rgba(255, 255, 255, .75);
+    border: 1px solid rgba(128, 52, 210, .18);
+    transition: background .15s;
+}
+.back-link:hover { background: #fff; }
+.back-link svg { width: 16px; height: 16px; }
+
+/* ---------- Dos columnas ---------- */
+.home-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
+    align-items: center;
+    gap: 3.5rem;
+    width: min(1100px, 100% - 3rem);
+    margin: auto;
+    padding: 3rem 0 1rem;
+    scroll-margin-top: 1rem;
+}
+
+.home-search h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 3.6vw, 2.9rem);
+    font-weight: 700;
+    line-height: 1.08;
+    letter-spacing: -.01em;
+    color: var(--ink);
+}
+.home-lead {
+    margin: 1rem 0 1.5rem;
+    max-width: 30rem;
+    font-size: 1.02rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+}
+
+/* ---------- Buscador con forma de placa ---------- */
+.plate-search { max-width: 400px; }
+
+.plate-input {
+    --plate-bg: #fff;
+    --plate-fg: var(--ink);
+    --plate-band: var(--bg-2);
+    --plate-band-fg: var(--ink-soft);
+    overflow: hidden;
+    border: 3px solid var(--ink);
+    border-radius: 12px;
+    background: var(--plate-bg);
+    box-shadow: 0 10px 26px rgba(23, 9, 51, .14);
+    transition: background .25s, box-shadow .2s, border-color .2s;
+}
+.plate-input:focus-within {
+    border-color: var(--neon);
+    box-shadow: var(--neon-ring), 0 10px 26px rgba(23, 9, 51, .14);
+}
+.plate-input-band {
+    display: block;
+    padding: .2rem 0;
+    text-align: center;
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .3em;
+    color: var(--plate-band-fg);
+    background: var(--plate-band);
+    transition: background .25s, color .25s;
+}
+.plate-input input {
+    display: block;
+    width: 100%;
+    padding: .55rem 1rem .7rem;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font-family: var(--font-display);
+    font-size: 2.1rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-align: center;
+    text-transform: uppercase;
+    color: var(--plate-fg);
+}
+.plate-input input::placeholder { color: var(--plate-fg); opacity: .3; }
+
+/* Un color por tipo (colores de placa de base.css) */
+.plate-input[data-plate="COLOR_YELLOW"],
+.plate-input[data-plate="COLOR_YELLOW_MOTORCYCLE"] { --plate-bg: var(--plate-yellow); --plate-fg: #111; --plate-band: #eab308; --plate-band-fg: #111; }
+.plate-input[data-plate="COLOR_WHITE"] { --plate-bg: var(--plate-white); --plate-fg: #111; --plate-band: #e5e7eb; --plate-band-fg: #111; }
+.plate-input[data-plate="COLOR_GREEN"] { --plate-bg: var(--plate-green); --plate-fg: #fff; --plate-band: #166534; --plate-band-fg: #fff; }
+.plate-input[data-plate="COLOR_BLUE"]  { --plate-bg: var(--plate-blue);  --plate-fg: #fff; --plate-band: #1e40af; --plate-band-fg: #fff; }
+.plate-input[data-plate="COLOR_RED"]   { --plate-bg: var(--plate-red);   --plate-fg: #fff; --plate-band: #b91c1c; --plate-band-fg: #fff; }
+
+.plate-type {
+    min-height: 1.3em;
+    margin: .55rem 0 .5rem;
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+}
+
+.plate-choices {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .4rem;
+    margin-bottom: .5rem;
+    font-size: .8rem;
+    color: var(--ink-soft);
+}
+.plate-choice {
+    padding: .2rem .7rem;
+    border: 1.5px solid var(--ink);
+    border-radius: 999px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    opacity: .55;
+    transition: opacity .15s, box-shadow .15s;
+}
+.plate-choice[aria-pressed="true"] { opacity: 1; box-shadow: var(--neon-ring); }
+.plate-choice:hover { opacity: 1; }
+
+.plate-search .btn-submit { margin-top: .35rem; }
+
+/* ---------- Placas de ejemplo ---------- */
+.plate-examples {
+    max-width: 400px;
+    margin-top: 1.4rem;
+    font-size: .85rem;
+    color: var(--ink-soft);
+}
+.plate-examples-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem .6rem;
+    margin: .5rem 0 .6rem;
+}
+.plate-examples-grid button {
+    display: grid;
+    justify-items: center;
+    gap: .15rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: transform .15s;
+}
+.plate-examples-grid button:hover { transform: translateY(-2px); }
+.plate-examples-grid button:focus-visible { outline: 2px solid var(--neon); outline-offset: 3px; border-radius: 6px; }
+.plate-examples-grid small { font-size: .72rem; }
+.plate-formats { margin: 0; font-size: .75rem; line-height: 1.5; }
+
+/* ---------- Tarjeta de resultado ---------- */
+.status-card {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    padding: 1.5rem;
+    background: var(--glass);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(128, 52, 210, .18);
+    border-radius: 18px;
+    box-shadow: 0 24px 64px rgba(23, 9, 51, .16);
+}
+.status-caption {
+    margin: .6rem 0 0;
+    text-align: center;
+    font-size: .8rem;
+    color: var(--ink-soft);
+}
+
+.status-empty {
+    display: grid;
+    justify-items: center;
+    gap: .6rem;
+    padding: 2.5rem 1rem;
+    text-align: center;
+    color: var(--ink-soft);
+}
+.status-empty svg { width: 30px; height: 30px; color: var(--neon); }
+.status-empty p { margin: 0; max-width: 22rem; }
+
+.status-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.1rem;
+}
+.status-kicker { font-size: .82rem; color: var(--ink-soft); }
+.status-head h2 {
+    margin: .15rem 0 0;
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--ink);
+}
+.status-head .plate-badge { font-size: .95rem; }
+
+.status-list {
+    display: grid;
+    gap: .7rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.status-item {
+    padding: .85rem 1rem;
+    border: 1px solid rgba(128, 52, 210, .14);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .7);
+}
+.status-item.current {
+    border-color: var(--neon);
+    background: #fff;
+    box-shadow: var(--neon-ring);
+}
+.status-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    margin-bottom: .45rem;
+}
+.status-row time { font-size: .8rem; color: var(--ink-soft); }
+.status-item p { margin: 0; font-size: .92rem; color: var(--ink); }
+
+/* ---------- Pantallas angostas ---------- */
+@media (max-width: 900px) {
+    .home-hero { grid-template-columns: 1fr; gap: 2rem; padding-top: 2rem; }
+    .plate-search,
+    .plate-examples { max-width: none; }
+}
+@media (max-width: 480px) {
+    .plate-input input { font-size: 1.8rem; }
+    .status-head { flex-direction: column; align-items: flex-start; }
+}
+
+/* ==========================================================
+   PIE DE PÁGINA (public/index.html)
+   Íconos de Lucide; las siluetas de arriba son images/footer-tools.svg. Usa la paleta de base.css y el mismo
+   morado oscuro del sidebar del panel.
+   ========================================================== */
+.site-footer {
+    --footer-bg: #1c0b40;                        /* mismo relleno del SVG de herramientas */
+    align-self: stretch;
+    margin-top: 4rem;
+    color: var(--edge);
+}
+
+/* Siluetas de herramientas (images/footer-tools.svg, relleno #1c0b40): se apoyan
+   sobre el pie y crecen con el ancho de la pantalla. */
+.footer-tools {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin-bottom: -1px;                         /* sin línea entre el dibujo y el pie */
+}
+
+.footer-body {
+    padding: 2.5rem 1.5rem 1.75rem;
+    background: linear-gradient(180deg, var(--footer-bg) 0%, #170933 50%, #0f0524 100%);
+}
+
+.footer-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.footer-grid h2 {
+    margin: 0 0 1rem;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: #fff;
+}
+.footer-grid p {
+    margin: 0;
+    font-size: .92rem;
+    line-height: 1.7;
+}
+
+.footer-list {
+    display: grid;
+    gap: .9rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: .92rem;
+    line-height: 1.5;
+}
+.footer-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: .65rem;
+}
+.footer-list svg {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    margin-top: .15rem;
+    color: #a35be8;
+}
+.footer-list a {
+    color: inherit;
+    text-decoration: none;
+    transition: color .15s;
+}
+.footer-list a:hover { color: #fff; }
+.footer-links li { gap: .35rem; }
+
+/* Redes: círculos morados con una línea a cada lado */
+.footer-social {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .75rem;
+    max-width: 760px;
+    margin: 2.5rem auto 1.75rem;
+}
+.footer-social::before,
+.footer-social::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: rgba(174, 157, 204, .25);
+}
+.footer-social a {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    color: #fff;
+    background: var(--neon);
+    transition: transform .15s, filter .15s;
+}
+.footer-social a:hover { transform: translateY(-2px); filter: brightness(1.12); }
+.footer-social a:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.footer-social svg { width: 18px; height: 18px; }
+
+/* Marca: mismo ícono del sidebar del panel */
+.footer-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .6rem;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+}
+.footer-brand > span:last-child span { color: #c69cf4; }
+.footer-brand-icon {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--neon), #a35be8);
+    box-shadow: 0 4px 12px rgba(128, 52, 210, .45);
+}
+.footer-brand-icon svg { width: 20px; height: 20px; }
+/* Logo del taller sobre cuadro blanco, igual que en el sidebar del panel */
+.footer-brand-icon:has(img) { background: #fff; }
+.footer-brand-icon img { width: 28px; height: 28px; display: block; }
+
+.footer-copy {
+    margin: 1rem 0 0;
+    text-align: center;
+    font-size: .82rem;
+    color: rgba(174, 157, 204, .7);
+}
+
+@media (max-width: 900px) {
+    .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+    .footer-grid { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,263 @@
+<!-- templates/repairs/form.html
+     Fragmentos del modal "Nueva orden" / "Editar orden". No lleva <html> ni <body>.
+     · GET /repairs/form       -> repairs/form :: modal   (nueva orden, empieza buscando la placa)
+     · GET /repairs/{id}/edit  -> repairs/form :: modal   (edición, el vehículo queda fijo)
+     · GET /repairs/vehicle-lookup, POST /repairs/vehicle, PUT /repairs/vehicle/{id}
+                               -> repairs/vehicle-response (solo la sección del vehículo)
+
+     Se abre con dialog.show() (panel.js) y se cierra con ✕, "Cancelar", clic afuera o Escape. -->
+<dialog class="modal-overlay" id="modal-new-order" th:fragment="modal"
+        aria-labelledby="modal-new-order-title" xmlns:th="http://www.thymeleaf.org">
+
+    <!-- Botón invisible que cubre el fondo: clic fuera de la tarjeta = cerrar -->
+    <button type="button" class="modal-dismiss" aria-label="Cerrar" onclick="closeModal(this)"></button>
+
+    <div class="modal-card">
+
+        <div class="modal-header">
+            <h2 id="modal-new-order-title"
+                th:text="${repairId == null} ? 'Nueva orden de servicio' : 'Editar orden de servicio'">Nueva orden de servicio</h2>
+            <button type="button" class="btn-close-modal" aria-label="Cerrar" onclick="closeModal(this)">&times;</button>
+        </div>
+
+        <div class="modal-body">
+            <!-- Toda la respuesta llega con hx-swap-oob (repairs/response): tabla, KPIs, toast y cierre del modal -->
+            <form id="form-new-order"
+                  th:hx-post="${repairId == null} ? @{/repairs}"
+                  th:hx-put="${repairId != null} ? @{/repairs/{id}(id=${repairId})}"
+                  hx-swap="none">
+
+                <!-- 1. Vehículo: buscar placa -> registrar o actualizar -->
+                <fieldset th:replace="~{repairs/form :: vehicle-section}"></fieldset>
+
+                <!-- 2. Orden: en una orden nueva aparece con "Continuar" -->
+                <fieldset id="service-section" class="form-section" th:hidden="${repairId == null}">
+                    <legend><i data-lucide="wrench"></i> Servicio y asignación técnica</legend>
+
+                    <div class="field">
+                        <label for="reason">Motivo de ingreso / falla reportada *</label>
+                        <textarea id="reason" name="reason" rows="3" maxlength="500" required
+                                  placeholder="Mantenimiento preventivo. Revisar ruido en frenos."
+                                  th:text="${repair.reason}"></textarea>
+                    </div>
+
+                    <div class="form-row flex-2">
+                        <div class="field">
+                            <label for="mechanic">Mecánico asignado *</label>
+                            <select id="mechanic" name="mechanicId" required>
+                                <option value=""
+                                        th:text="${#lists.isEmpty(mechanics)} ? 'No hay mecánicos registrados' : 'Selecciona un mecánico...'">Selecciona un mecánico...</option>
+                                <option th:each="m : ${mechanics}"
+                                        th:value="${m.id}"
+                                        th:text="${m.fullName}"
+                                        th:selected="${m.id == repair.mechanicId}">Julián Torres</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="serviceType">Ubicación de la atención *</label>
+                            <select id="serviceType" name="serviceType" required>
+                                <option th:each="t : ${serviceTypes}"
+                                        th:value="${t}"
+                                        th:text="${t.label}"
+                                        th:selected="${t == repair.serviceType or (repair.serviceType == null and t.name() == 'SERVICE_INTERNAL')}">En el taller</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Mapa: base.css lo muestra solo con "A domicilio"; panel.js llena latitud y longitud -->
+                    <div id="map-container" class="map-box">
+                        <p><small>Haz clic en el mapa para marcar el punto exacto de la asistencia:</small></p>
+                        <div id="modal-map"></div>
+                        <small id="coords-text" class="map-coords"
+                               th:text="${repair.latitude != null} ? |Lat ${repair.latitude} · Lng ${repair.longitude}| : 'Sin punto marcado'">Sin punto marcado</small>
+                        <input type="hidden" name="latitude" id="lat" th:value="${repair.latitude}">
+                        <input type="hidden" name="longitude" id="lng" th:value="${repair.longitude}">
+                    </div>
+                </fieldset>
+
+                <!-- Pie: "Crear orden" se oculta (panel.css) mientras la sección de la orden esté oculta -->
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal(this)">Cancelar</button>
+                    <button type="submit" class="btn btn-primary btn-submit"
+                            th:text="${repairId == null} ? '+ Crear orden' : 'Guardar orden'">+ Crear orden</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</dialog>
+
+
+<!-- ================= SECCIÓN DEL VEHÍCULO =================
+     vehicleStep:
+       search -> color + placa + "Buscar"
+       found  -> vehículo registrado: solo propietario y celular editables
+       new    -> no registrado: modelo, propietario y celular para registrarlo
+       locked -> edición de una orden: solo lectura
+     Los botones de esta sección reemplazan solo este <fieldset>. -->
+<fieldset id="vehicle-section" class="form-section" th:fragment="vehicle-section">
+    <legend><i data-lucide="car"></i> Vehículo</legend>
+
+    <p class="form-alert error" th:if="${vehicleError != null}" th:text="${vehicleError}">La placa no es válida</p>
+    <p class="form-alert" th:if="${vehicleWarning != null}" th:text="${vehicleWarning}">Este vehículo ya tiene una orden abierta</p>
+
+    <!-- 1. Buscar -->
+    <th:block th:if="${vehicleStep == 'search'}">
+        <div class="form-row flex-3">
+            <div class="field">
+                <label for="plateColor">Color de placa *</label>
+                <select id="plateColor" name="plateColor" autofocus>
+                    <option value="">Selecciona...</option>
+                    <option th:each="c : ${plateColors}"
+                            th:value="${c}"
+                            th:text="${c.label}"
+                            th:data-example="${c.example}"
+                            th:selected="${c == vehicleForm.plateColor}">Amarilla (particular)</option>
+                </select>
+            </div>
+
+            <!-- El placeholder y la vista previa muestran el ejemplo del color elegido (panel.js lo cambia al elegir otro) -->
+            <div class="field">
+                <label for="plate">Placa *</label>
+                <input type="text" id="plate" name="licensePlate" placeholder="ABC-123"
+                       th:placeholder="${vehicleForm.plateColor != null} ? ${vehicleForm.plateColor.example} : 'ABC-123'"
+                       maxlength="8" autocomplete="off" style="text-transform: uppercase;"
+                       th:value="${vehicleForm.licensePlate}"
+                       oninput="document.getElementById('plate-preview').textContent = this.value.toUpperCase() || this.placeholder">
+            </div>
+
+            <div class="field preview-field">
+                <label>Vista previa</label>
+                <div id="plate-preview" class="plate-badge inline-badge"
+                     th:with="example=${vehicleForm.plateColor != null} ? ${vehicleForm.plateColor.example} : 'ABC-123'"
+                     th:text="${#strings.isEmpty(vehicleForm.licensePlate)} ? ${example} : ${#strings.toUpperCase(vehicleForm.licensePlate)}">ABC-123</div>
+            </div>
+        </div>
+
+        <div class="section-actions">
+            <button type="button" id="btn-lookup" class="btn btn-primary btn-sm"
+                    th:hx-get="@{/repairs/vehicle-lookup}"
+                    hx-include="#vehicle-section"
+                    hx-target="#vehicle-section"
+                    hx-swap="outerHTML">
+                <i data-lucide="search"></i> Buscar placa
+            </button>
+        </div>
+    </th:block>
+
+    <!-- 2 y 4. Vehículo registrado (resumen) -->
+    <th:block th:if="${vehicleStep == 'found' or vehicleStep == 'locked'}">
+        <div class="vehicle-summary">
+            <div class="plate-badge inline-badge"
+                 th:classappend="|plate-${vehicle.plateColor}|"
+                 th:text="${vehicle.licensePlate}">ABC-123</div>
+            <strong th:text="|${vehicle.carModel.brand} ${vehicle.carModel.name}|">Renault Duster</strong>
+            <small th:text="${vehicle.plateColor.label}">Amarilla (particular)</small>
+        </div>
+
+        <!-- La orden usa este id (RepairDTO.vehicleId) -->
+        <input type="hidden" name="vehicleId" th:value="${vehicle.id}">
+
+        <p th:if="${vehicleStep == 'locked'}">
+            <small th:text="|${vehicle.ownerName} · ${vehicle.ownerPhone}|">María Rojas · 3104567823</small>
+        </p>
+    </th:block>
+
+    <!-- 2. Registrado: propietario y celular editables (placa, color y modelo van ocultos para el PUT) -->
+    <th:block th:if="${vehicleStep == 'found'}">
+        <input type="hidden" name="licensePlate" th:value="${vehicleForm.licensePlate}">
+        <input type="hidden" name="plateColor" th:value="${vehicleForm.plateColor}">
+        <input type="hidden" name="carModelId" th:value="${vehicleForm.carModelId}">
+
+        <div class="form-row flex-2">
+            <div class="field">
+                <label for="owner">Propietario *</label>
+                <input type="text" id="owner" name="ownerName" maxlength="100" data-track-change
+                       th:value="${vehicleForm.ownerName}">
+            </div>
+            <div class="field">
+                <label for="clientPhone">Celular *</label>
+                <input type="tel" id="clientPhone" name="ownerPhone" data-track-change
+                       placeholder="3206459812" th:value="${vehicleForm.ownerPhone}">
+            </div>
+        </div>
+
+        <div class="section-actions">
+            <button type="button" class="btn btn-outline btn-sm"
+                    th:hx-get="@{/repairs/vehicle-lookup}"
+                    hx-target="#vehicle-section"
+                    hx-swap="outerHTML">Cambiar placa</button>
+
+            <!-- panel.js lo muestra al modificar propietario o celular -->
+            <button type="button" id="btn-save-vehicle" class="btn btn-outline btn-sm" hidden
+                    th:hx-put="@{/repairs/vehicle/{id}(id=${vehicle.id})}"
+                    hx-include="#vehicle-section"
+                    hx-target="#vehicle-section"
+                    hx-swap="outerHTML">
+                <i data-lucide="save"></i> Guardar cambios
+            </button>
+
+            <button type="button" id="btn-continue" class="btn btn-primary btn-sm"
+                    onclick="showServiceSection()">Continuar</button>
+        </div>
+    </th:block>
+
+    <!-- 3. No registrado: se registra antes de crear la orden -->
+    <th:block th:if="${vehicleStep == 'new'}">
+        <div class="vehicle-summary">
+            <div class="plate-badge inline-badge"
+                 th:classappend="|plate-${vehicleForm.plateColor}|"
+                 th:text="${vehicleForm.licensePlate}">ABC-123</div>
+            <small>Vehículo no registrado: completa sus datos.</small>
+        </div>
+
+        <input type="hidden" name="licensePlate" th:value="${vehicleForm.licensePlate}">
+        <input type="hidden" name="plateColor" th:value="${vehicleForm.plateColor}">
+
+        <!-- Buscador de modelo: el mismo endpoint y fragmento de /vehicles
+             (GET /vehicles/car-models/search -> vehicles/form :: car-model-results).
+             Si se vuelve a escribir, se borra el modelo elegido hasta escoger otro. -->
+        <div class="field autocomplete">
+            <label for="carModelSearch">Marca y modelo *</label>
+            <input id="carModelSearch" type="search" name="text" autocomplete="off"
+                   placeholder="Escribe marca o modelo, ej. mazda 3"
+                   th:value="${carModelLabel}"
+                   th:hx-get="@{/vehicles/car-models/search}"
+                   hx-trigger="input changed delay:300ms, focus"
+                   hx-target="#car-model-results"
+                   hx-swap="outerHTML"
+                   oninput="this.closest('.autocomplete').querySelector('[name=carModelId]').value = ''">
+
+            <!-- Lo que realmente se envía: el id del modelo elegido -->
+            <input type="hidden" name="carModelId" th:value="${vehicleForm.carModelId}">
+
+            <div id="car-model-results" class="autocomplete-results"></div>
+        </div>
+
+        <div class="form-row flex-2">
+            <div class="field">
+                <label for="owner">Propietario *</label>
+                <input type="text" id="owner" name="ownerName" maxlength="100"
+                       placeholder="Valentina Castro" th:value="${vehicleForm.ownerName}">
+            </div>
+            <div class="field">
+                <label for="clientPhone">Celular *</label>
+                <input type="tel" id="clientPhone" name="ownerPhone"
+                       placeholder="3206459812" th:value="${vehicleForm.ownerPhone}">
+            </div>
+        </div>
+
+        <div class="section-actions">
+            <button type="button" class="btn btn-outline btn-sm"
+                    th:hx-get="@{/repairs/vehicle-lookup}"
+                    hx-target="#vehicle-section"
+                    hx-swap="outerHTML">Cambiar placa</button>
+            <button type="button" class="btn btn-primary btn-sm"
+                    th:hx-post="@{/repairs/vehicle}"
+                    hx-include="#vehicle-section"
+                    hx-target="#vehicle-section"
+                    hx-swap="outerHTML">
+                <i data-lucide="plus"></i> Registrar vehículo
+            </button>
+        </div>
+    </th:block>
+</fieldset>

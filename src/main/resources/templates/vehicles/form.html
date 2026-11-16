@@ -1,0 +1,126 @@
+<!-- templates/vehicles/form.html
+     Fragmentos del modal "Registrar vehículo" / "Editar vehículo". No lleva <html> ni <body>.
+     · GET /vehicles/form              -> vehicles/form :: modal   (registro)
+     · GET /vehicles/{id}/edit         -> vehicles/form :: modal   (edición)
+     · GET /vehicles/car-models/search -> vehicles/form :: car-model-results
+                                          (también lo usa el modal de órdenes, repairs/form.html)
+
+     Se abre con dialog.show() (panel.js) y se cierra con ✕, "Cancelar", clic afuera o Escape.
+     Al guardar bien, vehicles/response.html vacía #modal-container (cierra el modal),
+     actualiza la tabla y muestra el toast. Si hay error solo llega el toast y el modal
+     queda abierto con lo que se escribió (hx-swap="none"). -->
+<dialog class="modal-overlay vehicle-modal" id="modal-vehicle" th:fragment="modal"
+        aria-labelledby="modal-vehicle-title" xmlns:th="http://www.thymeleaf.org">
+
+    <!-- Botón invisible que cubre el fondo: clic fuera de la tarjeta = cerrar -->
+    <button type="button" class="modal-dismiss" aria-label="Cerrar" onclick="closeModal(this)"></button>
+
+    <div class="modal-card">
+
+        <div class="modal-header">
+            <h2 id="modal-vehicle-title"
+                th:text="${vehicleId == null} ? 'Registrar vehículo' : 'Editar vehículo'">Registrar vehículo</h2>
+            <button type="button" class="btn-close-modal" aria-label="Cerrar" onclick="closeModal(this)">&times;</button>
+        </div>
+
+        <div class="modal-body">
+            <!-- Los nombres de los campos son los de VehicleDTO:
+                 plateColor, licensePlate, ownerName, ownerPhone, carModelId -->
+            <form id="vehicle-form"
+                  th:hx-post="${vehicleId == null} ? @{/vehicles}"
+                  th:hx-put="${vehicleId != null} ? @{/vehicles/{id}(id=${vehicleId})}"
+                  hx-swap="none">
+
+                <!-- form-section: base.css colorea la vista previa según el color elegido -->
+                <fieldset class="form-section">
+                    <legend><i data-lucide="car"></i> Vehículo</legend>
+
+                    <!-- Fila 1: primero el color (la placa se valida según el color), luego placa y vista previa -->
+                    <div class="form-row flex-3">
+                        <div class="field">
+                            <label for="plateColor">Color de placa *</label>
+                            <select id="plateColor" name="plateColor" required>
+                                <option value="">Selecciona...</option>
+                                <option th:each="c : ${plateColors}"
+                                        th:value="${c}"
+                                        th:text="|${c.label} — ej. ${c.example}|"
+                                        th:data-example="${c.example}"
+                                        th:selected="${c == vehicle.plateColor}">Amarilla (particular) — ej. ABC-123</option>
+                            </select>
+                        </div>
+
+                        <!-- El placeholder y la vista previa muestran el ejemplo del color elegido (panel.js lo cambia al elegir otro) -->
+                        <div class="field">
+                            <label for="plate">Placa *</label>
+                            <input type="text" id="plate" name="licensePlate" placeholder="ABC-123"
+                                   th:placeholder="${vehicle.plateColor != null} ? ${vehicle.plateColor.example} : 'ABC-123'"
+                                   class="uppercase" maxlength="8" autocomplete="off" required
+                                   th:value="${vehicle.licensePlate}"
+                                   oninput="document.getElementById('plate-preview').textContent = this.value.toUpperCase() || this.placeholder">
+                        </div>
+
+                        <div class="field preview-field">
+                            <label>Vista previa</label>
+                            <div id="plate-preview" class="plate-badge inline-badge"
+                                 th:with="example=${vehicle.plateColor != null} ? ${vehicle.plateColor.example} : 'ABC-123'"
+                                 th:text="${#strings.isEmpty(vehicle.licensePlate)} ? ${example} : ${#strings.toUpperCase(vehicle.licensePlate)}">ABC-123</div>
+                        </div>
+                    </div>
+
+                    <!-- Fila 2: Marca y modelo. Buscador: mientras se escribe, el servidor devuelve
+                         los modelos que coinciden. Si se vuelve a escribir, se borra el modelo elegido
+                         hasta escoger otro (panel.js → selectCarModel). -->
+                    <div class="field autocomplete">
+                        <label for="carModelSearch">Marca y modelo *</label>
+                        <input id="carModelSearch" type="search" name="text" autocomplete="off"
+                               placeholder="Escribe para buscar (ej. Chevrolet Tracker)..."
+                               th:value="${carModelLabel}"
+                               th:hx-get="@{/vehicles/car-models/search}"
+                               hx-trigger="input changed delay:300ms, focus"
+                               hx-target="#car-model-results"
+                               hx-swap="outerHTML"
+                               oninput="this.form.carModelId.value = ''">
+
+                        <!-- Lo que realmente se envía: el id del modelo elegido -->
+                        <input type="hidden" name="carModelId" th:value="${vehicle.carModelId}">
+
+                        <div id="car-model-results" class="autocomplete-results" th:fragment="car-model-results">
+                            <p class="empty" th:if="${carModels != null and #lists.isEmpty(carModels)}">
+                                No hay modelos que coincidan
+                            </p>
+
+                            <button type="button" th:each="m : ${carModels}"
+                                    th:data-id="${m.id}"
+                                    th:data-label="|${m.brand} ${m.name}|"
+                                    th:text="|${m.brand} ${m.name}|"
+                                    onclick="selectCarModel(this)">Mazda 3</button>
+                        </div>
+                    </div>
+
+                    <!-- Fila 3: Propietario y celular (el back normaliza el celular: "320 645 9812" → 3206459812) -->
+                    <div class="form-row flex-2">
+                        <div class="field">
+                            <label for="owner">Propietario *</label>
+                            <input type="text" id="owner" name="ownerName" maxlength="100"
+                                   placeholder="Valentina Castro" required
+                                   th:value="${vehicle.ownerName}">
+                        </div>
+
+                        <div class="field">
+                            <label for="clientPhone">Celular *</label>
+                            <input type="tel" id="clientPhone" name="ownerPhone" maxlength="16"
+                                   inputmode="numeric" placeholder="3206459812" required
+                                   th:value="${vehicle.ownerPhone}">
+                        </div>
+                    </div>
+                </fieldset>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal(this)">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"
+                            th:text="${vehicleId == null} ? 'Guardar vehículo' : 'Actualizar'">Guardar vehículo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</dialog>

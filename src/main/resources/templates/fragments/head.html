@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<!-- templates/fragments/head.html
+     <head> compartido por todas las páginas. Uso:
+       <head th:replace="~{fragments/head :: head('Usuarios', 'panel')}">
+     · title -> se muestra como "title | Autogest"
+     · page  -> qué CSS y scripts se cargan:
+                'panel'  -> base.css + panel.css + Leaflet + Lucide + panel.js (vistas con sidebar)
+                'login'  -> base.css + login.css
+                'public' -> base.css + public.css + Lucide + public.js (portal de consulta sin sesión)
+
+     Lo que escribas dentro del <head> de cada página solo sirve para la vista previa
+     sin Spring: Thymeleaf lo reemplaza completo por este fragmento. -->
+<head th:fragment="head(title, page)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' | Autogest'">Autogest</title>
+    <link rel="icon" type="image/png" th:href="@{/images/logo-taller.png}">
+
+    <!-- Token CSRF en un solo lugar: panel.js lo agrega a cada petición HTMX
+         (htmx:configRequest). Los formularios normales lo reciben con th:action. -->
+    <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
+
+    <!-- Fuentes (Chakra Petch para títulos, IBM Plex Sans para texto) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+    <!-- Estilos: base.css siempre + el de la página -->
+    <link rel="stylesheet" th:href="@{/css/base.css}">
+    <th:block th:if="${page == 'panel'}">
+        <link rel="stylesheet" th:href="@{/css/panel.css}">
+        <link rel="stylesheet" th:href="@{/css/leaflet.css}">
+    </th:block>
+    <link rel="stylesheet" th:if="${page == 'login'}" th:href="@{/css/login.css}">
+    <link rel="stylesheet" th:if="${page == 'public'}" th:href="@{/css/public.css}">
+
+    <!-- Scripts con defer: se ejecutan en orden cuando el HTML ya está listo -->
+    <script defer th:src="@{/js/htmx.min.js}"></script>
+    <!-- Portal público: íconos Lucide y buscador con forma de placa (public.js) -->
+    <th:block th:if="${page == 'public'}">
+        <script defer th:src="@{/js/lucide.min.js}"></script>
+        <script defer th:src="@{/js/public.js}"></script>
+    </th:block>
+    <th:block th:if="${page == 'panel'}">
+        <script defer th:src="@{/js/lucide.min.js}"></script>
+        <script defer th:src="@{/js/leaflet.js}"></script>
+        <script defer th:src="@{/js/panel.js}"></script>
+    </th:block>
+</head>
+
+</html>

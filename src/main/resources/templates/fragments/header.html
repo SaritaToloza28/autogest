@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+
+<!-- templates/fragments/header.html
+     Piezas del encabezado superior (top-header) de las vistas del panel.
+
+     · welcome -> saludo según la hora: ícono, fecha y "Buenos días / Buenas tardes / Buenas noches".
+                  data-daypart (morning | afternoon | night) decide qué ícono, qué saludo y qué
+                  fondo se muestran (panel.css). Spring lo calcula con la hora del servidor y
+                  panel.js lo ajusta a la hora del navegador del usuario.
+     · role    -> insignia con el rol de la sesión (va en .header-right).
+
+     Uso en cada página (el hx-get solo trae el fragmento en la vista previa sin Spring):
+       <div class="welcome" th:replace="~{fragments/header :: welcome}"
+            hx-get="../fragments/header.html" hx-select=".welcome" hx-trigger="load" hx-swap="outerHTML"></div>
+       <span class="role-badge" th:replace="~{fragments/header :: role}"
+            hx-get="../fragments/header.html" hx-select=".role-badge" hx-trigger="load" hx-swap="outerHTML"></span> -->
+
+<div class="welcome" th:fragment="welcome"
+     th:with="hour=${#temporals.hour(#temporals.createNow())},
+              daypart=${hour >= 5 and hour < 12 ? 'morning' : (hour >= 12 and hour < 19 ? 'afternoon' : 'night')}"
+     data-daypart="morning" th:data-daypart="${daypart}">
+
+    <span class="welcome-icon" aria-hidden="true">
+        <i data-lucide="sun" class="for-morning"></i>
+        <i data-lucide="sunset" class="for-afternoon"></i>
+        <i data-lucide="moon" class="for-night"></i>
+    </span>
+
+    <div class="welcome-text">
+        <span class="welcome-date"
+              th:text="${#temporals.format(#temporals.createNow(), 'EEEE d MMMM')}">sábado 14 noviembre</span>
+        <span class="welcome-msg">
+            <span class="for-morning">Buenos días</span><span class="for-afternoon">Buenas tardes</span><span class="for-night">Buenas noches</span>,
+            <!-- Nombre del usuario de la sesión: primer nombre de su nombre completo
+                 (AppUser.fullName, ej. "Carlos Mejía" -> "Carlos"). Al pasar el cursor
+                 se ve el nombre completo.
+                 BACKEND: agregar a TODAS las vistas del panel el atributo "currentUserName"
+                 con el fullName del usuario autenticado, por ejemplo con un @ControllerAdvice:
+                     @ModelAttribute("currentUserName")
+                     String currentUserName(Authentication auth) {
+                         return auth == null ? null
+                              : appUserRepository.findByUsername(auth.getName())
+                                                 .map(AppUser::getFullName).orElse(null);
+                     }
+                 Mientras no exista, se muestra el nombre de usuario con el que inició sesión. -->
+            <strong th:with="displayName=${currentUserName != null ? currentUserName : #authentication.name}"
+                    th:title="${displayName}"
+                    th:text="${#strings.isEmpty(displayName) ? '' : #strings.arraySplit(displayName, ' ')[0]}">Carlos</strong>
+        </span>
+    </div>
+</div>
+
+<span class="role-badge" th:fragment="role">
+    <th:block sec:authorize="hasRole('ADMIN')"><i data-lucide="shield-check"></i> Administrador</th:block>
+    <th:block sec:authorize="hasRole('OPERATOR')"><i data-lucide="clipboard-list"></i> Operador</th:block>
+    <th:block sec:authorize="hasRole('MECHANIC')"><i data-lucide="wrench"></i> Mecánico</th:block>
+</span>
+
+</body>
+</html>

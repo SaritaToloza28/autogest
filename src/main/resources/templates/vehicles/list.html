@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<!--
+    Recepción vehicular (RF-07 / RF-08) · GET /vehicles
+    Modelo: vehicles
+    El formulario de registro / edición es un modal aparte (vehicles/form.html).
+    Fragmento que usan el controlador y vehicles/response.html (NO renombrar):
+      - th:fragment="table" → #vehicle-table (hx-swap-oob en response)
+-->
+<head th:replace="~{fragments/head :: head('Recepción vehicular', 'panel')}">
+    <!-- Solo para la vista previa sin Spring (ver fragments/head.html) -->
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="../../static/images/logo-taller.png">
+    <title>Recepción vehicular | Autogest</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="../../static/css/base.css">
+    <link rel="stylesheet" href="../../static/css/panel.css">
+    <script defer src="../../static/js/htmx.min.js"></script>
+    <script defer src="../../static/js/lucide.min.js"></script>
+    <script defer src="../../static/js/panel.js"></script>
+</head>
+
+<!-- preview-operator: en la vista previa muestra solo el menú del operador.
+     El token CSRF lo agrega panel.js a cada petición HTMX (meta _csrf de fragments/head). -->
+<body class="dashboard-body preview-operator">
+
+<!-- Notificaciones (fragments/toast.html las agrega aquí) -->
+<div id="toast-container" role="status" aria-live="polite"></div>
+
+<!-- page-vehicles: marca la opción activa del menú en la vista previa -->
+<div class="app-shell page-vehicles">
+
+    <!-- SIDEBAR: Spring lo reemplaza por fragments/sidebar.html con "vehicles" activo -->
+    <aside class="sidebar"
+           th:replace="~{fragments/sidebar :: sidebar('vehicles')}"
+           hx-get="../fragments/sidebar.html"
+           hx-select=".sidebar"
+           hx-trigger="load"
+           hx-swap="outerHTML"></aside>
+
+    <main id="main-content" class="main-content">
+
+        <header class="top-header">
+            <!-- Saludo según la hora: Spring lo reemplaza por fragments/header :: welcome -->
+            <div class="welcome"
+                 th:replace="~{fragments/header :: welcome}"
+                 hx-get="../fragments/header.html"
+                 hx-select=".welcome"
+                 hx-trigger="load"
+                 hx-swap="outerHTML"></div>
+            <div class="header-right">
+                <!-- Rol de la sesión: fragments/header :: role -->
+                <span class="role-badge"
+                      th:replace="~{fragments/header :: role}"
+                      hx-get="../fragments/header.html"
+                      hx-select=".role-badge"
+                      hx-trigger="load"
+                      hx-swap="outerHTML"></span>
+                <!-- Abre el modal: GET /vehicles/form -> vehicles/form :: modal -->
+                <button type="button" class="btn btn-primary"
+                        hx-get="form.html"
+                        th:hx-get="@{/vehicles/form}"
+                        hx-target="#modal-container"
+                        hx-swap="innerHTML">
+                    <i data-lucide="plus"></i> Registrar vehículo
+                </button>
+            </div>
+        </header>
+
+        <section class="page-title-section">
+            <div>
+                <span class="subtitle">TALLER · OPERADOR</span>
+                <h1>Recepción vehicular</h1>
+                <p class="subtitle">Registra los vehículos atendidos con su placa colombiana, propietario y modelo.</p>
+            </div>
+        </section>
+
+        <!-- ========================= TABLA ========================= -->
+        <section class="table-container card vehicles-table" aria-label="Vehículos registrados">
+
+            <div class="table-actions">
+                <!-- RF-07: buscar por parte de la placa o del propietario (GET /vehicles/search) -->
+                <label class="search-box">
+                    <i data-lucide="search"></i>
+                    <input type="search" name="q" autocomplete="off"
+                           placeholder="Buscar por placa o propietario"
+                           aria-label="Buscar por placa o propietario"
+                           hx-get="/vehicles/search" th:hx-get="@{/vehicles/search}"
+                           hx-trigger="input changed delay:300ms, search"
+                           hx-target="#vehicle-table"
+                           hx-swap="outerHTML">
+                </label>
+                <small><i data-lucide="pencil"></i> Doble clic en una fila para editarla</small>
+            </div>
+
+            <!-- response.html reemplaza esta tabla completa al guardar o eliminar.
+                 hx-swap-oob solo se agrega en esa respuesta (oob=true); en la página no va. -->
+            <table id="vehicle-table" class="custom-table" th:fragment="table"
+                   th:hx-swap-oob="${oob} ? 'true'">
+                <thead>
+                <tr>
+                    <th scope="col">Placa</th>
+                    <th scope="col">Tipo de placa</th>
+                    <th scope="col">Propietario</th>
+                    <th scope="col">Celular</th>
+                    <th scope="col">Modelo</th>
+                    <th scope="col"><span class="sr-only">Acciones</span></th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <!-- Doble clic en la fila = editar (salvo si el doble clic fue sobre un botón) -->
+                <tr th:each="v : ${vehicles}"
+                    hx-get="/vehicles/1/edit"
+                    th:hx-get="@{/vehicles/{id}/edit(id=${v.id})}"
+                    hx-trigger="dblclick[!target.closest('button')]"
+                    hx-target="#modal-container"
+                    hx-swap="innerHTML">
+                    <td>
+                        <span class="plate-badge plate-COLOR_YELLOW"
+                              th:class="|plate-badge plate-${v.plateColor}|"
+                              th:text="${v.licensePlate}">ABC-123</span>
+                    </td>
+                    <td th:text="${v.plateColor.label}">Amarilla (particular)</td>
+                    <td class="owner" th:text="${v.ownerName}">Laura Gómez</td>
+                    <td th:text="${v.ownerPhone}">3001234567</td>
+                    <td th:text="|${v.carModel.brand} ${v.carModel.name}|">Mazda 3</td>
+                    <td>
+                        <div class="row-actions">
+                            <button type="button" class="btn btn-outline btn-sm"
+                                    hx-get="/vehicles/1/edit"
+                                    th:hx-get="@{/vehicles/{id}/edit(id=${v.id})}"
+                                    hx-target="#modal-container"
+                                    hx-swap="innerHTML">
+                                Editar
+                            </button>
+
+                            <button type="button" class="btn btn-danger-soft btn-sm"
+                                    hx-delete="/vehicles/1"
+                                    th:hx-delete="@{/vehicles/{id}(id=${v.id})}"
+                                    hx-swap="none"
+                                    hx-confirm="¿Eliminar este vehículo?"
+                                    th:hx-confirm="|¿Eliminar el vehículo ${v.licensePlate}?|">
+                                Eliminar
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- Filas de maqueta: solo en la vista estática, Spring las elimina -->
+                <tr th:remove="all">
+                    <td><span class="plate-badge plate-COLOR_WHITE">TPU-321</span></td>
+                    <td>Blanca (público / oficial)</td>
+                    <td class="owner">Transportes El Sol S.A.S.</td>
+                    <td>3152084417</td>
+                    <td>Renault Logan</td>
+                    <td><div class="row-actions">
+                        <button type="button" class="btn btn-outline btn-sm">Editar</button>
+                        <button type="button" class="btn btn-danger-soft btn-sm">Eliminar</button>
+                    </div></td>
+                </tr>
+                <tr th:remove="all">
+                    <td><span class="plate-badge plate-COLOR_BLUE">CD-1234</span></td>
+                    <td>Azul (diplomático)</td>
+                    <td class="owner">Embajada de Canadá</td>
+                    <td>3109876543</td>
+                    <td>Toyota Corolla</td>
+                    <td><div class="row-actions">
+                        <button type="button" class="btn btn-outline btn-sm">Editar</button>
+                        <button type="button" class="btn btn-danger-soft btn-sm">Eliminar</button>
+                    </div></td>
+                </tr>
+
+                <!-- Lista vacía: el mensaje cambia si viene de una búsqueda -->
+                <tr class="empty-row" th:if="${#lists.isEmpty(vehicles)}">
+                    <td colspan="6"
+                        th:text="${#strings.isEmpty(q)} ? 'No hay vehículos registrados' : 'Ningún vehículo coincide con la búsqueda'">
+                        No hay vehículos registrados</td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+</div>
+
+<!-- HTMX inserta aquí el modal (vehicles/form :: modal) -->
+<div id="modal-container"></div>
+
+</body>
+</html>
