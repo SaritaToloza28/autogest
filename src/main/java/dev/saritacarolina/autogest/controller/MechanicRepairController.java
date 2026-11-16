@@ -3,12 +3,11 @@ package dev.saritacarolina.autogest.controller;
 import dev.saritacarolina.autogest.model.entity.Repair;
 import dev.saritacarolina.autogest.service.RepairService;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 //Reparaciones asignadas al mecánico
 @Controller
@@ -21,19 +20,36 @@ public class MechanicRepairController {
         this.service = service;
     }
 
+    //Página completa: resumen + tabla (el detalle empieza vacío)
     @GetMapping
     public String getAssignedTemplate(Authentication authentication, Model model){
-        addAssignedData(model, authentication);
+        model.addAttribute("repairs", service.findAssignedRepairs(authentication.getName()));
         return "repairs/assigned";
+    }
+
+    //Fragmento: detalle de una orden del mecánico, con los repuestos compatibles con su vehículo
+    @GetMapping("/{id}/detail")
+    public String getDetail(@PathVariable("id") Long repairId, Authentication authentication,
+                            HttpServletResponse response, Model model){
+        try {
+            addDetail(model, service.findAssignedRepairById(repairId, authentication.getName()));
+            return "repairs/assigned :: order-detail";
+        } catch (IllegalArgumentException | EntityNotFoundException e) {
+            //No reemplaza el detalle, solo muestra el aviso
+            response.setHeader("HX-Reswap", "none");
+            model.addAttribute("toastType", "error");
+            model.addAttribute("toastMessage", e.getMessage());
+            return "fragments/toast :: toast";
+        }
     }
 
     @PostMapping("/{id}/start")
     public String startRepair(@PathVariable("id") Long repairId, Authentication authentication, Model model){
         try {
             service.startRepair(repairId, authentication.getName());
-            return toast(model, authentication, "success", "Reparación iniciada");
+            return toast(model, authentication, repairId, "success", "Reparación iniciada");
         } catch (IllegalArgumentException | EntityNotFoundException e) {
-            return toast(model, authentication, "error", e.getMessage());
+            return toast(model, authentication, repairId, "error", e.getMessage());
         }
     }
 
@@ -41,9 +57,9 @@ public class MechanicRepairController {
     public String completeRepair(@PathVariable("id") Long repairId, Authentication authentication, Model model){
         try {
             service.completeRepair(repairId, authentication.getName());
-            return toast(model, authentication, "success", "Reparación completada");
+            return toast(model, authentication, repairId, "success", "Reparación completada");
         } catch (IllegalArgumentException | EntityNotFoundException e) {
-            return toast(model, authentication, "error", e.getMessage());
+            return toast(model, authentication, repairId, "error", e.getMessage());
         }
     }
 
@@ -55,9 +71,9 @@ public class MechanicRepairController {
                                Model model){
         try {
             service.addSparePart(repairId, sparePartId, quantity, authentication.getName());
-            return toast(model, authentication, "success", "Repuesto registrado");
+            return toast(model, authentication, repairId, "success", "Repuesto registrado");
         } catch (IllegalArgumentException | EntityNotFoundException e) {
-            return toast(model, authentication, "error", e.getMessage());
+            return toast(model, authentication, repairId, "error", e.getMessage());
         }
     }
 
@@ -68,25 +84,31 @@ public class MechanicRepairController {
                                   Model model){
         try {
             service.removeSparePart(repairId, sparePartId, authentication.getName());
-            return toast(model, authentication, "success", "Repuesto quitado; volvió al stock");
+            return toast(model, authentication, repairId, "success", "Repuesto quitado; volvió al stock");
         } catch (IllegalArgumentException | EntityNotFoundException e) {
-            return toast(model, authentication, "error", e.getMessage());
+            return toast(model, authentication, repairId, "error", e.getMessage());
         }
     }
 
     // ---------- Auxiliares ----------
 
-    //Reparaciones del mecánico y los repuestos compatibles con su vehículo
-    private void addAssignedData(Model model, Authentication authentication){
-        List<Repair> repairs = service.findAssignedRepairs(authentication.getName());
-
-        model.addAttribute("repairs", repairs);
-        model.addAttribute("compatibleParts", service.findCompatiblePartsForInProgress(repairs));
+    //La orden del detalle y los repuestos compatibles con el modelo de su vehículo
+    private void addDetail(Model model, Repair repair){
+        model.addAttribute("detail", repair);
+        model.addAttribute("compatibleParts", service.findCompatibleParts(repair));
     }
 
-    //Después de cada acción se vuelve a pintar la lista con el mensaje
-    private String toast(Model model, Authentication authentication, String type, String message){
-        addAssignedData(model, authentication);
+    //Después de cada acción se vuelven a pintar el resumen, la tabla y el detalle con el mensaje
+    private String toast(Model model, Authentication authentication, Long repairId, String type, String message){
+        model.addAttribute("repairs", service.findAssignedRepairs(authentication.getName()));
+        model.addAttribute("oob", true);
+
+        //Si la orden no existe o no es suya, solo se refresca la tabla
+        try {
+            addDetail(model, service.findAssignedRepairById(repairId, authentication.getName()));
+        } catch (IllegalArgumentException | EntityNotFoundException ignored) {
+        }
+
         model.addAttribute("toastType", type);
         model.addAttribute("toastMessage", message);
         return "repairs/assigned-response";

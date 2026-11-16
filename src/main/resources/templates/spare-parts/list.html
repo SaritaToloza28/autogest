@@ -1,172 +1,315 @@
 <!DOCTYPE html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org">
-<head>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/head :: head('Repuestos', 'panel')}">
+    <!-- Solo para la vista previa sin Spring (ver fragments/head.html) -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="../../static/images/logo-taller.png">
     <title>Repuestos | Autogest</title>
-    <link rel="stylesheet" href="../../static/css/styles.css" th:href="@{/css/styles.css}">
-    <script src="../../static/js/htmx.min.js" th:src="@{/js/htmx.min.js}"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="../../static/css/base.css">
+    <link rel="stylesheet" href="../../static/css/panel.css">
+    <script defer src="../../static/js/htmx.min.js"></script>
+    <script defer src="../../static/js/lucide.min.js"></script>
+    <script defer src="../../static/js/panel.js"></script>
 </head>
-<body hx-headers='{"X-CSRF-TOKEN": "estatico"}'
-      th:hx-headers="|{&quot;${_csrf.headerName}&quot;: &quot;${_csrf.token}&quot;}|">
 
-<div id="toast-container"></div>
+<body class="dashboard-body preview-admin">
 
-<main class="container container-wide">
-    <h1>Repuestos</h1>
+<!-- Notificaciones (fragments/toast.html las agrega aquí) -->
+<div id="toast-container" role="status" aria-live="polite"></div>
 
-    <form id="spare-part-form" class="card" th:fragment="form"
-          hx-post="/spare-parts"
-          th:hx-post="${sparePartId == null} ? @{/spare-parts} : @{/spare-parts/{id}(id=${sparePartId})}"
-          hx-encoding="multipart/form-data"
-          hx-target="this"
-          hx-swap="outerHTML">
+<div class="app-shell">
 
-        <h2 th:text="${sparePartId == null} ? 'Nuevo repuesto' : 'Editar repuesto'">Nuevo repuesto</h2>
+    <aside class="sidebar"
+           th:replace="~{fragments/sidebar :: sidebar('spare-parts')}"
+           hx-get="../fragments/sidebar.html"
+           hx-select=".sidebar"
+           hx-trigger="load"
+           hx-swap="outerHTML"></aside>
 
-        <div class="form-grid">
-            <div class="field">
-                <label for="name">Nombre</label>
-                <input id="name" type="text" name="name" maxlength="100" required
-                       value="" th:value="${sparePart.name}">
+    <main id="main-content" class="main-content">
+
+        <header class="top-header">
+            <!-- Saludo según la hora: Spring lo reemplaza por fragments/header :: welcome -->
+            <div class="welcome"
+                 th:replace="~{fragments/header :: welcome}"
+                 hx-get="../fragments/header.html"
+                 hx-select=".welcome"
+                 hx-trigger="load"
+                 hx-swap="outerHTML"></div>
+            <div class="header-right">
+                <!-- Rol de la sesión: fragments/header :: role -->
+                <span class="role-badge"
+                      th:replace="~{fragments/header :: role}"
+                      hx-get="../fragments/header.html"
+                      hx-select=".role-badge"
+                      hx-trigger="load"
+                      hx-swap="outerHTML"></span>
+                <!-- Abre el modal: GET /spare-parts/form -> spare-parts/form :: form -->
+                <button type="button"
+                        class="btn btn-primary btn-submit"
+                        hx-get="form.html"
+                        th:hx-get="@{/spare-parts/form}"
+                        hx-target="#modal-container"
+                        hx-swap="innerHTML">
+                    <i data-lucide="plus"></i> Nuevo repuesto
+                </button>
             </div>
+        </header>
 
-            <div class="field">
-                <label for="eanCode">Código EAN-13</label>
-                <input id="eanCode" type="text" name="eanCode" inputmode="numeric"
-                       minlength="13" maxlength="13" pattern="\d{13}" required
-                       placeholder="4006381333931"
-                       value="" th:value="${sparePart.eanCode}">
+        <section class="page-title-section">
+            <div>
+                <span class="subtitle">INVENTARIO</span>
+                <h1>Inventario y gestión de repuestos</h1>
+                <p class="subtitle">Stock, precios y modelos compatibles de cada repuesto. Filtra por modelo para ver qué piezas sirven y si hay disponibilidad.</p>
             </div>
+        </section>
 
-            <div class="field">
-                <label for="price">Precio</label>
-                <input id="price" type="number" name="price" min="0.01" step="0.01" required
-                       value="" th:value="${sparePart.price}">
+        <!-- ========================= KPIs =========================
+             Mismas tarjetas que Órdenes de servicio. Se cuentan en la plantilla;
+             response.html las devuelve con hx-swap-oob después de guardar o eliminar. -->
+        <section id="kpi-grid" class="kpi-grid" aria-label="Resumen del inventario"
+                 th:fragment="kpis" th:hx-swap-oob="${oob} ? 'true'">
+            <div class="kpi-card">
+                <span class="kpi-label">Todos los repuestos</span>
+                <span class="kpi-value" th:text="${#lists.size(spareParts)}">24</span>
             </div>
-
-            <div class="field">
-                <label for="stock">Stock</label>
-                <input id="stock" type="number" name="stock" min="0" step="1" required
-                       value="0" th:value="${sparePart.stock}">
+            <div class="kpi-card">
+                <span class="kpi-label">Con stock</span>
+                <span class="kpi-value" th:text="${#lists.size(spareParts.?[stock > 0])}">20</span>
             </div>
-
-            <div class="field field-full">
-                <label for="description">Descripción</label>
-                <textarea id="description" name="description" maxlength="500" rows="3"
-                          th:text="${sparePart.description}"></textarea>
+            <div class="kpi-card">
+                <span class="kpi-label">Sin stock</span>
+                <span class="kpi-value" th:text="${#lists.size(spareParts.?[stock == 0])}">4</span>
             </div>
+            <div class="kpi-card">
+                <span class="kpi-label">Unidades en inventario</span>
+                <span class="kpi-value"
+                      th:text="${#lists.isEmpty(spareParts) ? 0 : #aggregates.sum(spareParts.![stock])}">318</span>
+            </div>
+        </section>
 
-            <fieldset class="field field-full">
-                <legend>Modelos compatibles</legend>
+        <div class="inventory-layout">
 
-                <p class="empty" th:if="${#lists.isEmpty(carModels)}">No hay modelos registrados</p>
+            <!-- ===================== TABLA (izquierda) =====================
+                 Clic en una fila -> GET /spare-parts/{id}/detail abre la vista de referencia.
+                 Los clics en los botones de la fila no abren el detalle (filtro del hx-trigger). -->
+            <section class="table-container card" aria-label="Repuestos">
 
-                <div class="checkbox-grid">
-                    <label class="checkbox" th:each="m : ${carModels}">
-                        <input type="checkbox" name="compatibleModelIds"
-                               value="1"
-                               th:value="${m.id}"
-                               th:checked="${sparePart.compatibleModelIds != null
-                                             and #sets.contains(sparePart.compatibleModelIds, m.id)}">
-                        <span th:text="|${m.brand} ${m.name}|">Mazda 3</span>
+                <!-- Búsqueda filtrada por nombre, modelo compatible y stock (administrador).
+                     BACKEND: GET /spare-parts/search?q=&carModelId=&inStock= responde con
+                     spare-parts/response (spareParts filtrados + toast: "N repuestos compatibles"
+                     o alerta si no hay / no hay stock). La página necesita "carModels" en el modelo. -->
+                <form class="table-actions parts-filter"
+                      hx-get="/spare-parts/search" th:hx-get="@{/spare-parts/search}"
+                      hx-trigger="input delay:350ms, submit"
+                      hx-target="#spare-part-table" hx-swap="outerHTML">
+                    <label class="search-box">
+                        <i data-lucide="search"></i>
+                        <input type="search" name="q" autocomplete="off"
+                               placeholder="Buscar por nombre o código EAN"
+                               aria-label="Buscar por nombre o código EAN">
                     </label>
+                    <label class="filter-select">
+                        <i data-lucide="car"></i>
+                        <span class="sr-only">Modelo compatible</span>
+                        <select name="carModelId">
+                            <option value="">Todos los modelos</option>
+                            <option th:each="m : ${carModels}"
+                                    value="1" th:value="${m.id}"
+                                    th:selected="${carModelId != null and m.id == carModelId}"
+                                    th:text="|${m.brand} ${m.name}|">Mazda 3</option>
+                        </select>
+                    </label>
+                    <label class="filter-check">
+                        <input type="checkbox" name="inStock" value="true"> Solo con stock
+                    </label>
+                </form>
+                <table id="spare-part-table" class="custom-table" th:fragment="table"
+                       th:hx-swap-oob="${oob} ? 'true'">
+                    <thead>
+                    <tr>
+                        <th scope="col">Imagen</th>
+                        <th scope="col">Código</th>
+                        <th scope="col">Nombre del repuesto</th>
+                        <th scope="col">Precio</th>
+                        <th scope="col">Stock</th>
+                        <th scope="col"><span class="sr-only">Acciones</span></th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr th:each="p : ${spareParts}"
+                        data-id="1" th:data-id="${p.id}"
+                        th:classappend="${detail != null and detail.id == p.id} ? 'row-selected'"
+                        hx-get="/spare-parts/1/detail"
+                        th:hx-get="@{/spare-parts/{id}/detail(id=${p.id})}"
+                        hx-trigger="click[!event.target.closest('.row-actions')]"
+                        hx-target="#part-detail"
+                        hx-swap="outerHTML">
+                        <td>
+                            <!-- hidden: en la vista previa no hay imagen; Spring quita el atributo -->
+                            <img class="thumb" th:if="${p.imagePath != null}" alt="Imagen del repuesto"
+                                 hidden th:hidden="${false}"
+                                 th:src="@{${p.imagePath}}">
+                            <span class="thumb thumb-empty" th:if="${p.imagePath == null}">
+                                <i data-lucide="image"></i>
+                            </span>
+                        </td>
+                        <td class="part-code" th:text="${p.eanCode}">7701234000011</td>
+                        <td class="part-name" th:text="${p.name}">Filtro de aceite</td>
+                        <td class="part-price" th:text="|$ ${#numbers.formatDecimal(p.price, 1, 'POINT', 2, 'COMMA')}|">$ 25.000,00</td>
+                        <td>
+                            <span class="badge badge-green"
+                                  th:class="${p.stock == 0} ? 'badge badge-red' : 'badge badge-green'"
+                                  th:text="${p.stock}">30</span>
+                        </td>
+                        <td>
+                            <div class="row-actions">
+                                <button type="button" class="btn btn-outline btn-sm btn-icon"
+                                        title="Editar" aria-label="Editar"
+                                        hx-get="/spare-parts/1/edit"
+                                        th:hx-get="@{/spare-parts/{id}/edit(id=${p.id})}"
+                                        hx-target="#modal-container"
+                                        hx-swap="innerHTML">
+                                    <i data-lucide="pencil"></i>
+                                </button>
+                                <button type="button" class="btn btn-danger-soft btn-sm btn-icon"
+                                        title="Eliminar" aria-label="Eliminar"
+                                        hx-delete="/spare-parts/1"
+                                        th:hx-delete="@{/spare-parts/{id}(id=${p.id})}"
+                                        hx-swap="none"
+                                        hx-confirm="¿Eliminar este repuesto?"
+                                        th:hx-confirm="|¿Eliminar ${p.name}?|">
+                                    <i data-lucide="trash-2"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Filas de ejemplo: solo en la vista estática, Spring las elimina -->
+                    <tr th:remove="all">
+                        <td><span class="thumb thumb-empty"><i data-lucide="image"></i></span></td>
+                        <td class="part-code">7701234000028</td>
+                        <td class="part-name">Pastillas de freno delanteras</td>
+                        <td class="part-price">$ 120.000,00</td>
+                        <td><span class="badge badge-green">12</span></td>
+                        <td>
+                            <div class="row-actions">
+                                <button type="button" class="btn btn-outline btn-sm btn-icon" aria-label="Editar"><i data-lucide="pencil"></i></button>
+                                <button type="button" class="btn btn-danger-soft btn-sm btn-icon" aria-label="Eliminar"><i data-lucide="trash-2"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr th:remove="all">
+                        <td><span class="thumb thumb-empty"><i data-lucide="image"></i></span></td>
+                        <td class="part-code">7701234000103</td>
+                        <td class="part-name">Plumillas limpiaparabrisas</td>
+                        <td class="part-price">$ 40.000,00</td>
+                        <td><span class="badge badge-red">0</span></td>
+                        <td>
+                            <div class="row-actions">
+                                <button type="button" class="btn btn-outline btn-sm btn-icon" aria-label="Editar"><i data-lucide="pencil"></i></button>
+                                <button type="button" class="btn btn-danger-soft btn-sm btn-icon" aria-label="Eliminar"><i data-lucide="trash-2"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr th:if="${#lists.isEmpty(spareParts)}" class="empty-row" hidden th:hidden="${false}">
+                        <td colspan="6">No hay repuestos registrados</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- ================ VISTA DE REFERENCIA (derecha) ================
+                 Cerrada (sin .is-open) la tabla ocupa todo el ancho. Se abre cuando
+                 GET /spare-parts/{id}/detail la devuelve con "detail" (clic en una fila).
+                 Después de editar vuelve con hx-swap-oob (oob = true en el controlador).
+                 La ✕ la cierra sin ir al servidor (closePartDetail en panel.js). -->
+            <aside id="part-detail" class="card part-detail" th:fragment="detail"
+                   th:classappend="${detail != null} ? 'is-open'"
+                   th:hx-swap-oob="${oob != null and detail != null} ? 'true'"
+                   aria-labelledby="part-detail-title">
+
+                <div class="part-detail-title">
+                    <h2 id="part-detail-title">Vista de referencia</h2>
+                    <button type="button" class="btn-close-modal" aria-label="Cerrar vista de referencia"
+                            onclick="closePartDetail()">&times;</button>
                 </div>
-            </fieldset>
 
-            <div class="field field-full" th:if="${sparePart.imagePath != null}">
-                <span>Imagen actual</span>
-                <img class="thumb-lg" alt="Imagen actual del repuesto"
-                     src="../../static/images/placeholder.png"
-                     th:src="@{${sparePart.imagePath}}">
-            </div>
+                <th:block th:if="${detail != null}">
+                    <div class="part-image">
+                        <img th:if="${detail.imagePath != null}" th:src="@{${detail.imagePath}}"
+                             hidden th:hidden="${false}"
+                             th:alt="|Imagen de ${detail.name}|" alt="Imagen del repuesto">
+                        <div class="part-image-empty" th:if="${detail.imagePath == null}">
+                            <i data-lucide="image"></i>
+                            <span>Sin imagen de referencia</span>
+                        </div>
+                    </div>
 
-            <div class="field field-full">
-                <label for="image"
-                       th:text="${sparePartId == null} ? 'Imagen (opcional)' : 'Nueva imagen (déjala vacía para conservar la actual)'">Imagen (opcional)</label>
-                <input id="image" type="file" name="image" accept="image/jpeg,image/png,image/webp">
-            </div>
+                    <div class="part-detail-head">
+                        <h3 th:text="${detail.name}">Pastillas de freno delanteras</h3>
+                        <span class="badge badge-green"
+                              th:class="${detail.stock == 0} ? 'badge badge-red' : 'badge badge-green'"
+                              th:text="${detail.stock == 0} ? 'Agotado' : 'Disponible'">Disponible</span>
+                    </div>
+
+                    <dl class="part-facts">
+                        <div class="full">
+                            <dt>CÓDIGO EAN</dt>
+                            <dd th:text="${detail.eanCode}">7701234000028</dd>
+                        </div>
+                        <div>
+                            <dt>PRECIO</dt>
+                            <dd th:text="|$ ${#numbers.formatDecimal(detail.price, 1, 'POINT', 2, 'COMMA')}|">$ 120.000,00</dd>
+                        </div>
+                        <div>
+                            <dt>STOCK ACTUAL</dt>
+                            <dd th:text="|${detail.stock} ${detail.stock == 1 ? 'unidad' : 'unidades'}|">12 unidades</dd>
+                        </div>
+                        <div class="full" th:if="${!#strings.isEmpty(detail.description)}">
+                            <dt>DESCRIPCIÓN</dt>
+                            <dd class="text" th:text="${detail.description}">Juego de 4 pastillas cerámicas</dd>
+                        </div>
+                        <div class="full">
+                            <dt>MODELOS COMPATIBLES</dt>
+                            <dd>
+                                <div class="tag-list">
+                                    <span class="badge badge-purple" th:each="m : ${detail.compatibleModels}"
+                                          th:text="|${m.brand} ${m.name}|">Chevrolet Spark</span>
+                                    <span class="badge badge-purple" th:remove="all">Chevrolet Onix</span>
+                                    <span class="badge badge-purple" th:remove="all">Mazda 3</span>
+                                    <small th:if="${#lists.isEmpty(detail.compatibleModels)}"
+                                           hidden th:hidden="${false}">Sin modelos asignados</small>
+                                </div>
+                            </dd>
+                        </div>
+                    </dl>
+
+                    <div class="part-detail-actions">
+                        <button type="button" class="btn btn-primary"
+                                hx-get="form.html"
+                                th:hx-get="@{/spare-parts/{id}/edit(id=${detail.id})}"
+                                hx-target="#modal-container"
+                                hx-swap="innerHTML">
+                            <i data-lucide="pencil"></i> Editar repuesto
+                        </button>
+                    </div>
+                </th:block>
+            </aside>
+
         </div>
+    </main>
+</div>
 
-        <div class="actions">
-            <button type="submit" class="btn btn-primary"
-                    th:text="${sparePartId == null} ? 'Guardar' : 'Actualizar'">Guardar</button>
-
-            <button type="button" class="btn" th:if="${sparePartId != null}"
-                    hx-get="/spare-parts/form"
-                    th:hx-get="@{/spare-parts/form}"
-                    hx-target="#spare-part-form"
-                    hx-swap="outerHTML">Cancelar</button>
-        </div>
-    </form>
-
-    <div class="table-wrap">
-        <table id="spare-part-table" class="card table" th:fragment="table" hx-swap-oob="true">
-            <thead>
-            <tr>
-                <th>Imagen</th>
-                <th>Nombre</th>
-                <th>EAN</th>
-                <th>Precio</th>
-                <th>Stock</th>
-                <th>Modelos</th>
-                <th>Acciones</th>
-            </tr>
-            </thead>
-
-            <tbody>
-            <tr th:each="p : ${spareParts}">
-                <td>
-                    <img class="thumb" th:if="${p.imagePath != null}" alt="Imagen del repuesto"
-                         src="../../static/images/placeholder.png"
-                         th:src="@{${p.imagePath}}">
-                    <span class="thumb thumb-empty" th:if="${p.imagePath == null}">—</span>
-                </td>
-                <td th:text="${p.name}">Filtro de aceite</td>
-                <td class="mono" th:text="${p.eanCode}">4006381333931</td>
-                <td th:text="|$ ${#numbers.formatDecimal(p.price, 1, 'POINT', 2, 'COMMA')}|">$ 25.000,00</td>
-                <td th:text="${p.stock}"
-                    th:classappend="${p.stock == 0} ? 'stock-empty'">12</td>
-                <td>
-                    <span class="tag" th:each="m : ${p.compatibleModels}"
-                          th:text="|${m.brand} ${m.name}|">Mazda 3</span>
-                </td>
-                <td class="actions">
-                    <button type="button" class="btn"
-                            hx-get="/spare-parts/1/edit"
-                            th:hx-get="@{/spare-parts/{id}/edit(id=${p.id})}"
-                            hx-target="#spare-part-form"
-                            hx-swap="outerHTML">Editar</button>
-
-                    <button type="button" class="btn btn-danger"
-                            hx-delete="/spare-parts/1"
-                            th:hx-delete="@{/spare-parts/{id}(id=${p.id})}"
-                            hx-swap="none"
-                            hx-confirm="¿Eliminar este repuesto?"
-                            th:hx-confirm="|¿Eliminar ${p.name}?|">Eliminar</button>
-                </td>
-            </tr>
-
-            <tr th:remove="all">
-                <td><span class="thumb thumb-empty">—</span></td>
-                <td>Pastillas de freno</td>
-                <td class="mono">7702001000012</td>
-                <td>$ 80.000,00</td>
-                <td class="stock-empty">0</td>
-                <td><span class="tag">Chevrolet Spark</span></td>
-                <td class="actions">
-                    <button type="button" class="btn">Editar</button>
-                    <button type="button" class="btn btn-danger">Eliminar</button>
-                </td>
-            </tr>
-
-            <tr th:if="${#lists.isEmpty(spareParts)}">
-                <td colspan="7" class="empty">No hay repuestos registrados</td>
-            </tr>
-            </tbody>
-        </table>
-    </div>
-</main>
+<!-- HTMX inserta aquí el modal (spare-parts/form :: form) -->
+<div id="modal-container"></div>
 
 </body>
 </html>

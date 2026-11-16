@@ -1,11 +1,12 @@
-
 /* =========================================================
    AUTOGEST · panel.js
-   Comportamiento mínimo del dashboard de órdenes:
+   Comportamiento común de las vistas del panel (con sidebar):
    1. Íconos Lucide cada vez que HTMX inserta contenido.
    2. Abrir y cerrar el modal (<dialog>).
    3. Recepción: Enter busca la placa, "Continuar" muestra la orden.
    4. Mapas Leaflet (marcar el punto en el modal y verlo en el detalle).
+   5. Token CSRF en cada petición HTMX.
+   6. Modal de confirmación propio para hx-confirm (eliminar, cancelar, entregar…).
    ========================================================= */
 
 const DEFAULT_CENTER = [5.5353, -73.3678]; // Tunja
@@ -68,6 +69,25 @@ document.addEventListener('input', event => {
         if (button) {
             button.hidden = false;
         }
+    }
+});
+
+// Color de placa: al elegir el tipo, su ejemplo pasa al placeholder y a la vista previa
+// (si todavía no se ha escrito la placa). Escucha en document porque HTMX carga los modales después.
+document.addEventListener('change', event => {
+    if (event.target.id !== 'plateColor') {
+        return;
+    }
+
+    const example = event.target.selectedOptions[0]?.dataset.example || 'ABC-123';
+    const input = document.getElementById('plate');
+    const preview = document.getElementById('plate-preview');
+
+    if (input) {
+        input.placeholder = example;
+    }
+    if (preview && input && input.value === '') {
+        preview.textContent = example;
     }
 });
 
@@ -177,21 +197,129 @@ function showDetailMap(button) {
 
 /* ---------- Fila seleccionada en la tabla ---------- */
 document.addEventListener('click', event => {
-    const row = event.target.closest('#orders-body tr[data-id]');
-    if (!row) {
+    // Órdenes (#orders-body) y repuestos (#spare-part-table): las filas con data-id abren un detalle.
+    // Los botones de la fila (.row-actions) no cambian la selección.
+    const row = event.target.closest('tbody tr[data-id]');
+    if (!row || event.target.closest('.row-actions')) {
         return;
     }
-    document.querySelectorAll('#orders-body tr.row-selected')
+    row.parentElement.querySelectorAll('tr.row-selected')
         .forEach(selected => selected.classList.remove('row-selected'));
     row.classList.add('row-selected');
 });
 
+/* ---------- 5. CSRF ----------
+   fragments/head.html deja el token en <meta name="_csrf"> y el nombre del header en
+   <meta name="_csrf_header">. Así no hay que repetir hx-headers en cada <body>. */
+document.addEventListener('htmx:configRequest', event => {
+    const token = document.querySelector('meta[name="_csrf"]')?.content;
+    const header = document.querySelector('meta[name="_csrf_header"]')?.content;
+    if (token && header) {
+        event.detail.headers[header] = token;
+    }
+});
+
+/* ---------- 6. Modal de confirmación ----------
+   Reemplaza la ventana confirm() del navegador en todos los botones con hx-confirm,
+   sin cambiar las plantillas: el texto de hx-confirm es la pregunta del modal.
+   Usa los mismos estilos del modal de base.css (.modal-overlay, .modal-card).
+   · Botones que borran (hx-delete o clase *danger*): tono rojo, ícono de alerta y "Eliminar"/"Sí, cancelar".
+   · Los demás (entregar, terminar reparación): tono morado y "Sí, continuar".
+   Se cierra con Cancelar, ✕, clic afuera o Escape; solo "confirmar" envía la petición. */
+function isDangerAction(element) {
+    return element.hasAttribute('hx-delete')
+        || element.hasAttribute('data-hx-delete')
+        || /danger/.test(element.className);
+}
+
+function askConfirmation(question, element) {
+    return new Promise(resolve => {
+        const danger = isDangerAction(element);
+        const deletes = element.hasAttribute('hx-delete');
+        const confirmLabel = danger ? (deletes ? 'Eliminar' : 'Sí, cancelar') : 'Sí, continuar';
+
+        const dialog = document.createElement('dialog');
+        dialog.className = 'modal-overlay confirm-modal' + (danger ? ' is-danger' : '');
+        dialog.setAttribute('aria-labelledby', 'confirm-title');
+        dialog.setAttribute('aria-describedby', 'confirm-text');
+        dialog.innerHTML = `
+            <button type="button" class="modal-dismiss" aria-label="Cerrar" data-answer="no"></button>
+            <div class="modal-card confirm-card">
+                <span class="confirm-icon"><i data-lucide="${danger ? 'triangle-alert' : 'circle-help'}"></i></span>
+                <h2 id="confirm-title">${danger ? 'Confirma esta acción' : '¿Deseas continuar?'}</h2>
+                <p id="confirm-text"></p>
+                <div class="confirm-actions">
+                    <button type="button" class="btn btn-outline" data-answer="no">Cancelar</button>
+                    <button type="button" class="btn ${danger ? 'btn-danger' : 'btn-primary'}" data-answer="yes"></button>
+                </div>
+            </div>`;
+        // textContent: la pregunta viene de la plantilla (puede traer nombres de usuario)
+        dialog.querySelector('#confirm-text').textContent = question;
+        dialog.querySelector('[data-answer="yes"]').textContent = confirmLabel;
+
+        let accepted = false;
+        dialog.addEventListener('click', event => {
+            const answer = event.target.closest('[data-answer]')?.dataset.answer;
+            if (answer) {
+                accepted = answer === 'yes';
+                dialog.close();
+            }
+        });
+        dialog.addEventListener('close', () => {
+            dialog.remove();
+            element.focus?.();
+            resolve(accepted);
+        });
+
+        document.body.append(dialog);
+        drawIcons();
+        dialog.show();                                   // show(): los toasts quedan por encima
+        dialog.querySelector('[data-answer="no"].btn').focus();   // Cancelar enfocado: Enter no borra por accidente
+    });
+}
+
+document.addEventListener('htmx:confirm', event => {
+    const question = event.detail.question;
+    if (!question) {
+        return;                                          // sin hx-confirm: la petición sigue normal
+    }
+    event.preventDefault();
+    askConfirmation(question, event.detail.elt).then(accepted => {
+        if (accepted) {
+            event.detail.issueRequest(true);             // true = ya confirmado, no vuelve a preguntar
+        }
+    });
+});
+
+/* ---------- Saludo según la hora (fragments/header :: welcome) ----------
+   Spring pone data-daypart con la hora del servidor; aquí se ajusta a la hora
+   del navegador: 5-11 días, 12-18 tardes, 19-4 noches. */
+function updateDaypart() {
+    const hour = new Date().getHours();
+    const daypart = hour >= 5 && hour < 12 ? 'morning' : hour < 19 && hour >= 12 ? 'afternoon' : 'night';
+    document.querySelectorAll('.welcome[data-daypart]')
+        .forEach(welcome => { welcome.dataset.daypart = daypart; });
+}
+setInterval(updateDaypart, 60000);
+
+/* ---------- Vista de referencia de repuestos ---------- */
+// La ✕ del panel lo cierra y la tabla vuelve a ocupar todo el ancho
+function closePartDetail() {
+    document.getElementById('part-detail')?.classList.remove('is-open');
+    document.querySelectorAll('#spare-part-table tr.row-selected')
+        .forEach(row => row.classList.remove('row-selected'));
+}
+
 /* ---------- Enganche con HTMX ---------- */
-document.addEventListener('DOMContentLoaded', drawIcons);
+document.addEventListener('DOMContentLoaded', () => {
+    drawIcons();
+    updateDaypart();
+});
 
 document.addEventListener('htmx:load', event => {
     const elt = event.detail.elt;
     drawIcons();
+    updateDaypart();
     openModals(elt);
 
     // Orden nueva: si se volvió a la búsqueda ("Cambiar placa"), se oculta otra vez la sección de la orden
@@ -199,4 +327,16 @@ document.addEventListener('htmx:load', event => {
         && document.querySelector('#form-new-order[hx-post]')) {
         document.getElementById('service-section').hidden = true;
     }
+});
+
+/* ---------- Contraseña cambiada ----------
+   AccountController envía la cabecera HX-Trigger {"passwordChanged": "<url>"}.
+   Se bloquea el botón (evita un segundo envío) y tras 1,5 s se va a la vista principal del rol. */
+document.addEventListener('passwordChanged', event => {
+    // setTimeout 0: la respuesta trae un formulario nuevo; se bloquea el botón ya reemplazado
+    setTimeout(() => {
+        const button = document.querySelector('#password-form [type="submit"]');
+        if (button) button.disabled = true;
+    }, 0);
+    setTimeout(() => { window.location.href = event.detail.value; }, 1500);
 });

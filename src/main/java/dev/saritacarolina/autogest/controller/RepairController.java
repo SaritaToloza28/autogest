@@ -45,14 +45,14 @@ public class RepairController {
     @GetMapping
     public String getRepairTemplate(Model model){
         model.addAttribute("repairs", service.findAllRepairs());
-        return "repairs/dashboard";
+        return "repairs/list";
     }
 
     //Fragmento: filas de la tabla filtradas por parte de la placa o del propietario
     @GetMapping("/search")
     public String searchRepairs(@RequestParam(required = false) String q, Model model){
         model.addAttribute("repairs", service.searchRepairs(q));
-        return "repairs/dashboard :: orders-body";
+        return "repairs/list :: orders-body";
     }
 
     //Fragmento: detalle de una orden
@@ -60,7 +60,7 @@ public class RepairController {
     public String getDetail(@PathVariable("id") Long repairId, Model model){
         try {
             model.addAttribute("detail", service.findRepairById(repairId));
-            return "repairs/dashboard :: order-detail";
+            return "repairs/list :: order-detail";
         } catch (EntityNotFoundException e) {
             return toast(model, "error", e.getMessage());
         }
@@ -73,7 +73,7 @@ public class RepairController {
     public String getEmptyForm(Model model){
         addFormData(model, RepairDTO.empty(), null);
         addVehicleStep(model, "search", null, VehicleDTO.empty());
-        return "repairs/create :: modal";
+        return "repairs/form :: modal";
     }
 
     //Fragmento: Carga el modal pero con los datos de una reparación existente para editarla.
@@ -84,7 +84,7 @@ public class RepairController {
 
             addFormData(model, service.toDTO(repair), repairId);
             addVehicleStep(model, "locked", repair.getVehicle(), vehicleService.toDTO(repair.getVehicle()));
-            return "repairs/create :: modal";
+            return "repairs/form :: modal";
         } catch (EntityNotFoundException e) {
             return toast(model, "error", e.getMessage());
         }

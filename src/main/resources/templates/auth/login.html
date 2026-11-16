@@ -1,18 +1,16 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
-<head>
+<head th:replace="~{fragments/head :: head('Iniciar sesión', 'login')}">
+    <!-- Solo para la vista previa sin Spring (ver fragments/head.html) -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="../../static/images/logo-taller.png">
     <title>Iniciar sesión | Autogest</title>
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=IBM+Plex+Sans:wght@400;500&display=swap">
-
-    <!-- base.css: variables, campos, botón y toasts compartidos · login.css: diseño de esta página -->
-    <link rel="stylesheet" href="../../static/css/base.css" th:href="@{/css/base.css}">
-    <link rel="stylesheet" href="../../static/css/login.css" th:href="@{/css/login.css}">
+          href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="../../static/css/base.css">
+    <link rel="stylesheet" href="../../static/css/login.css">
 </head>
 <body class="auth-page">
 
@@ -63,6 +61,8 @@
         </svg>
 
         <div class="auth-content">
+            <img class="auth-logo" src="../../static/images/logo-taller.png"
+                 th:src="@{/images/logo-taller.png}" alt="">
             <h1 class="brand">Autogest</h1>
             <p class="subtitle">Bienvenido de vuelta</p>
 

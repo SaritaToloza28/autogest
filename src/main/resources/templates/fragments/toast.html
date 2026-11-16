@@ -1,5 +1,12 @@
-<div th:fragment="toast" hx-swap-oob="beforeend:#toast-container">
+<!-- templates/fragments/toast.html
+     Aviso que envía el servidor con la respuesta de cada acción (crear, editar, eliminar).
+     Llega con hx-swap-oob y se agrega al final de #toast-container; base.css lo oculta a los 4 s.
+     · toastMessage -> texto del aviso. Si es null no se pinta nada (sin cajas vacías).
+     · toastType    -> 'error' para rojo; cualquier otro valor (o null) es verde.
+     th:class (no th:classappend) deja una sola clase de color: con las dos, ganaba el verde. -->
+<div th:fragment="toast" th:if="${toastMessage != null}" hx-swap-oob="beforeend:#toast-container">
     <div class="toast toast-success"
-         th:classappend="${toastType == 'error'} ? 'toast-error' : 'toast-success'"
+         th:class="${toastType == 'error'} ? 'toast toast-error' : 'toast toast-success'"
+         th:attr="role=${toastType == 'error'} ? 'alert' : 'status'"
          th:text="${toastMessage}">Mensaje de prueba</div>
 </div>

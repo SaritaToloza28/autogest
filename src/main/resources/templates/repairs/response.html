@@ -1,17 +1,16 @@
-
-<!-- Respuesta de las acciones del dashboard (crear, editar, entregar, cancelar).
-     Todoo llega con hx-swap-oob: cada bloque reemplaza su parte de la página. -->
+<!-- Respuesta de las acciones de la lista de órdenes (crear, editar, entregar, cancelar).
+     Todo llega con hx-swap-oob: cada bloque reemplaza su parte de la página. -->
 
 <!-- KPIs y filas de la tabla (oob = true en refreshDashboard) -->
 <th:block th:if="${oob != null}">
-    <section th:replace="~{repairs/dashboard :: kpis}"></section>
+    <section th:replace="~{repairs/list :: kpis}"></section>
     <!-- Un <tbody> no puede ir suelto: HTMX lo acepta dentro de <template> -->
-    <template><tbody th:replace="~{repairs/dashboard :: orders-body}"></tbody></template>
+    <template><tbody th:replace="~{repairs/list :: orders-body}"></tbody></template>
 </th:block>
 
 <!-- Detalle actualizado (entregar, cancelar, editar) o vacío (eliminar: clearDetail) -->
 <th:block th:if="${oob != null and (detail != null or clearDetail != null)}">
-    <section th:replace="~{repairs/dashboard :: order-detail}"></section>
+    <section th:replace="~{repairs/list :: order-detail}"></section>
 </th:block>
 
 <!-- Cierra el modal vaciando su contenedor -->

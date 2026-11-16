@@ -1,7 +1,8 @@
 
 /* =========================================================
+TODO: revisar todo
 
-   AUTOGEST · styles.css
+   AUTOGEST · panel.css (vistas con sidebar)
    Paleta:
    --lavender  #AE9DCC  (acentos suaves, textos sobre fondo oscuro)
    --muted     #6E5799  (textos secundarios, iconos)
@@ -18,7 +19,7 @@
     --primary-dark: #6a24b8;
     --ink: #170933;
 
-    --bg: #faf8ff;
+    --bg: #e8e3f0;
     --surface: #ffffff;
     --border: #e6dcf6;
     --border-soft: #f0eaf9;
@@ -129,6 +130,12 @@ small { color: var(--muted); font-size: 0.78rem; }
     box-shadow: 0 4px 12px rgba(128, 52, 210, 0.45);
 }
 .brand-icon [data-lucide] { width: 18px; height: 18px; }
+/* Logo del taller (images/logo-taller.png) sobre un cuadro blanco para que el morado resalte */
+.brand-icon:has(img) {
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(128, 52, 210, 0.35);
+}
+.brand-icon img { width: 26px; height: 26px; display: block; }
 .brand-name {
     font-size: 1.45rem;
     font-weight: 600;
@@ -185,16 +192,16 @@ small { color: var(--muted); font-size: 0.78rem; }
 .menu-item:hover [data-lucide] { color: var(--lavender); }
 /* .active lo pone Thymeleaf; las rutas .html solo coinciden en la vista previa */
 .menu-item.active,
-.page-orders .menu-item[href$="repairs/dashboard.html"],
+.page-orders .menu-item[href$="repairs/list.html"],
 .page-vehicles .menu-item[href$="vehicles/list.html"] {
     background: rgba(128, 52, 210, 0.28);
     color: #fff;
 }
 .menu-item.active [data-lucide],
-.page-orders .menu-item[href$="repairs/dashboard.html"] [data-lucide],
+.page-orders .menu-item[href$="repairs/list.html"] [data-lucide],
 .page-vehicles .menu-item[href$="vehicles/list.html"] [data-lucide] { color: var(--tint); }
 .menu-item.active::before,
-.page-orders .menu-item[href$="repairs/dashboard.html"]::before,
+.page-orders .menu-item[href$="repairs/list.html"]::before,
 .page-vehicles .menu-item[href$="vehicles/list.html"]::before {
     content: '';
     position: absolute;
@@ -251,27 +258,145 @@ small { color: var(--muted); font-size: 0.78rem; }
 /* =========================================================
    HEADER SUPERIOR
    ========================================================= */
+/* El fondo cambia con la hora del saludo (data-daypart en .welcome):
+   mañana cálida, tarde durazno, noche lavanda con estrellas. */
 .top-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 72px;
+    gap: 1rem;
+    min-height: 76px;
     margin: 0 -2.5rem;
     padding: 0 2.5rem;
     background: var(--surface);
     border-bottom: 1px solid var(--border);
+    transition: background 0.4s ease;
+}
+.top-header:has(.welcome[data-daypart="morning"]) {
+    background:
+        radial-gradient(ellipse 480px 160px at 0% 30%, rgba(252, 211, 77, 0.22), transparent 70%),
+        radial-gradient(ellipse 380px 140px at 100% 0%, rgba(147, 197, 253, 0.16), transparent 70%),
+        var(--surface);
+}
+.top-header:has(.welcome[data-daypart="afternoon"]) {
+    background:
+        radial-gradient(ellipse 480px 160px at 0% 30%, rgba(251, 146, 60, 0.16), transparent 70%),
+        radial-gradient(ellipse 380px 140px at 100% 0%, rgba(192, 132, 252, 0.14), transparent 70%),
+        var(--surface);
+}
+.top-header:has(.welcome[data-daypart="night"]) {
+    background:
+        radial-gradient(circle at 36% 24%, rgba(128, 52, 210, 0.5) 1px, transparent 1.6px),
+        radial-gradient(circle at 44% 66%, rgba(128, 52, 210, 0.35) 1px, transparent 1.6px),
+        radial-gradient(circle at 58% 20%, rgba(128, 52, 210, 0.6) 1.2px, transparent 2px),
+        radial-gradient(circle at 66% 60%, rgba(128, 52, 210, 0.35) 1px, transparent 1.6px),
+        radial-gradient(circle at 74% 30%, rgba(128, 52, 210, 0.45) 1px, transparent 1.6px),
+        radial-gradient(ellipse 480px 160px at 0% 0%, rgba(128, 52, 210, 0.16), transparent 70%),
+        radial-gradient(ellipse 380px 140px at 100% 0%, rgba(128, 52, 210, 0.10), transparent 70%),
+        var(--surface);
 }
 .breadcrumbs { font-size: 0.88rem; color: var(--muted); }
 .breadcrumbs strong { color: var(--ink); font-weight: 600; }
 .breadcrumbs span { margin-right: 0.35rem; }
 
-.welcome-msg {
-    font-size: 0.95rem;
+/* ---------- Saludo (fragments/header :: welcome) ---------- */
+.welcome {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    min-width: 0;
+}
+
+/* Solo se ve el ícono y el saludo de la hora actual */
+.welcome .for-morning,
+.welcome .for-afternoon,
+.welcome .for-night { display: none; }
+.welcome[data-daypart="morning"] .for-morning,
+.welcome[data-daypart="afternoon"] .for-afternoon,
+.welcome[data-daypart="night"] .for-night { display: inline; }
+
+.welcome-icon {
+    flex-shrink: 0;
+    width: 46px;
+    height: 46px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    color: #fff;
+    transition: background 0.4s ease, box-shadow 0.4s ease;
+}
+.welcome-icon [data-lucide],
+.welcome-icon svg { width: 22px; height: 22px; stroke-width: 2; }
+.welcome[data-daypart] .welcome-icon svg.for-morning,
+.welcome[data-daypart] .welcome-icon svg.for-afternoon,
+.welcome[data-daypart] .welcome-icon svg.for-night { display: none; }
+.welcome[data-daypart="morning"] .welcome-icon svg.for-morning,
+.welcome[data-daypart="afternoon"] .welcome-icon svg.for-afternoon,
+.welcome[data-daypart="night"] .welcome-icon svg.for-night { display: block; }
+
+.welcome[data-daypart="morning"] .welcome-icon {
+    background: linear-gradient(135deg, #f6a623, #fcd34d);
+    box-shadow: 0 6px 18px rgba(246, 166, 35, 0.35);
+}
+.welcome[data-daypart="afternoon"] .welcome-icon {
+    background: linear-gradient(135deg, #f97316, #db2777);
+    box-shadow: 0 6px 18px rgba(219, 39, 119, 0.3);
+}
+.welcome[data-daypart="night"] .welcome-icon {
+    background: linear-gradient(135deg, var(--primary), #4f46e5);
+    box-shadow: 0 6px 18px rgba(79, 70, 229, 0.35);
+}
+
+.welcome-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+}
+
+.welcome-date {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     color: var(--muted);
 }
-.welcome-msg strong {
+
+/* Mismo tamaño de letra que antes (1.25rem) */
+.welcome-msg {
+    font-size: 1.25rem;
+    line-height: 1.25;
     color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.welcome-msg strong {
+    color: var(--primary);
     font-weight: 600;
+}
+
+/* ---------- Insignia del rol (fragments/header :: role) ---------- */
+.role-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.95rem;
+    border-radius: 999px;
+    background: var(--tint);
+    color: var(--primary-dark);
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.role-badge [data-lucide],
+.role-badge svg { width: 16px; height: 16px; }
+/* Vista previa sin Spring: el <th:block> de cada rol queda en el HTML y envuelve ícono y texto */
+.role-badge > :not(svg) { display: inline-flex; align-items: center; gap: 0.45rem; }
+
+@media (max-width: 700px) {
+    .role-badge { display: none; }
+    .welcome-icon { width: 38px; height: 38px; border-radius: 11px; }
 }
 
 .header-right { display: flex; align-items: center; gap: 1.25rem; }
@@ -454,7 +579,7 @@ small { color: var(--muted); font-size: 0.78rem; }
     padding: 0.55rem 0.85rem;
     border: 1px solid var(--border);
     border-radius: 9px;
-    background: var(--bg);
+    background: var(--row-selected);   /* mismo lila de la fila seleccionada */
     color: var(--muted);
     transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
@@ -495,7 +620,7 @@ small { color: var(--muted); font-size: 0.78rem; }
     font-weight: 600;
     letter-spacing: 0.04em;
     color: var(--muted);
-    background: var(--bg);
+    background: transparent;           /* toma el color de la tarjeta */
     border-bottom: 1px solid var(--border);
 }
 
@@ -512,7 +637,7 @@ small { color: var(--muted); font-size: 0.78rem; }
 }
 
 .custom-table tbody tr:hover {
-    background: var(--bg);
+    background: var(--row-selected);   /* mismo lila de la fila seleccionada */
 }
 
 .custom-table tbody tr.row-selected {
@@ -665,9 +790,8 @@ small { color: var(--muted); font-size: 0.78rem; }
 
 /* Contenedor del mapa Leaflet (inyección HTMX) */
 #detail-map:empty { display: none; }
-/* Alto según la pantalla: entre 320 y 480 px */
 #detail-map {
-    height: clamp(320px, 55vh, 480px);
+    height: 280px;
     margin: 0 1.5rem 1.5rem;
     border: 1px solid var(--border);
     border-radius: 12px;
@@ -825,12 +949,12 @@ small { color: var(--muted); font-size: 0.78rem; }
    así que estas reglas solo actúan en la vista estática.
    Clase en <body>: preview-operator | preview-mechanic | preview-admin
    ========================================================= */
-.preview-operator [sec\:authorize*="MECHANIC"],
+.preview-operator [sec\:authorize*="MECHANIC"]:not([sec\:authorize*="OPERATOR"]),
 .preview-operator [sec\:authorize="hasRole('ADMIN')"],
-.preview-mechanic [sec\:authorize*="OPERATOR"],
-.preview-mechanic [sec\:authorize*="ADMIN"],
+.preview-mechanic [sec\:authorize*="OPERATOR"]:not([sec\:authorize*="MECHANIC"]),
+.preview-mechanic [sec\:authorize*="ADMIN"]:not([sec\:authorize*="MECHANIC"]),
 .preview-admin    [sec\:authorize="hasRole('OPERATOR')"],
-.preview-admin    [sec\:authorize*="MECHANIC"] {
+.preview-admin    [sec\:authorize*="MECHANIC"]:not([sec\:authorize*="ADMIN"]) {
     display: none;
 }
 
@@ -888,7 +1012,7 @@ small { color: var(--muted); font-size: 0.78rem; }
 }
 .btn-danger-soft:hover { background: #fde8ef; border-color: #f6c6d6; }
 
-/* Modal de vehículo (vehicles/form.html): campos más separados que en el modal de órdenes */
+/* Modal de vehículos (vehicles/form.html) */
 .vehicle-modal .form-section { display: grid; gap: 20px; padding: 20px; }
 .vehicle-modal .form-row { gap: 20px; }
 .vehicle-modal .field { margin-bottom: 0; }
@@ -916,3 +1040,520 @@ small { color: var(--muted); font-size: 0.78rem; }
     .form-grid { grid-template-columns: 1fr; }
     .form-card-header { flex-direction: column; gap: 0.25rem; }
 }
+/* =========================================================
+   MÓDULOS CON FORMULARIO + TABLA
+   (users, vehicles, spare-parts, car-models, account, repairs/assigned)
+   Antes vivían en styles.css; ahora usan el mismo layout del panel.
+   ========================================================= */
+
+/* Enlace "Cambiar mi contraseña" activo en el sidebar */
+.help-link.active { color: #fff; background: rgba(128, 52, 210, 0.28); }
+
+/* Tablas sin detalle al hacer clic: sin cursor de enlace */
+.custom-table.static-rows tbody tr { cursor: default; }
+.custom-table .mono,
+.mono { font-family: monospace; }
+
+/* Formulario angosto (cambiar contraseña) */
+.form-card.form-narrow { max-width: 560px; }
+.form-card.form-narrow .form-grid { grid-template-columns: 1fr; }
+
+/* Campo que ocupa toda la fila del form-grid */
+.field-full { grid-column: 1 / -1; }
+
+/* <fieldset class="field">: sin borde de navegador */
+fieldset.field { margin: 0; padding: 0; border: 0; min-width: 0; }
+fieldset.field legend {
+    margin-bottom: 0.4rem;
+    padding: 0;
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink);
+}
+
+/* Casillas de modelos compatibles (repuestos) */
+.checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.4rem 1rem;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--bg);
+}
+.checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.88rem;
+    cursor: pointer;
+}
+/* base.css da width:100% y padding a todo input dentro de .field: aquí no aplica */
+.field .checkbox input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    accent-color: var(--primary);
+    box-shadow: none;
+}
+.field input[type="file"] { padding: 0.5rem; background: var(--bg); }
+
+.form-hint { color: var(--muted); font-size: 0.85rem; }
+
+/* Etiqueta pequeña (modelos compatibles, repuestos usados) */
+.tag {
+    display: inline-block;
+    margin: 2px 4px 2px 0;
+    padding: 2px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--tint);
+    color: var(--primary-dark);
+    font-size: 0.76rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Imágenes de repuestos */
+.thumb {
+    width: 44px;
+    height: 44px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+.thumb-empty {
+    display: inline-grid;
+    place-items: center;
+    color: var(--lavender);
+    background: var(--bg);
+}
+.thumb-lg {
+    width: 140px;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+}
+
+.stock-empty { color: #C2255C; font-weight: 700; }
+.nowrap { white-space: nowrap; }
+
+/* Badge de rol de usuario */
+.badge-role { background: var(--tint); color: var(--primary-dark); }
+
+/* ---------- Mis reparaciones (mecánico) ---------- */
+.assigned-list {
+    display: grid;
+    gap: 1.25rem;
+    margin-top: 1.5rem;
+}
+.assigned-card .detail-header { flex-wrap: wrap; gap: 0.75rem; }
+.assigned-card .detail-title { flex-wrap: wrap; }
+.assigned-card .detail-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.parts-block {
+    padding: 0 1.5rem 1.4rem;
+}
+.parts-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0.5rem 0 1rem;
+    padding: 0;
+    list-style: none;
+}
+.part-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.35rem 0.3rem 0.75rem;
+    border-radius: 999px;
+    background: var(--tint);
+    color: var(--primary-dark);
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+.part-chip button {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #C2255C;
+    cursor: pointer;
+}
+.part-chip button:hover { background: #fde8ef; }
+.part-chip button [data-lucide] { width: 14px; height: 14px; }
+
+.add-part-form {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 0.6fr) auto;
+    align-items: end;
+    gap: 0.75rem;
+}
+.add-part-form .field { margin-bottom: 0; }
+.add-part-form .field label { font-size: 0.85rem; font-weight: 600; }
+.add-part-form .field :is(input, select) { padding: 0.6rem 0.8rem; font-size: 0.9rem; }
+
+.empty-card {
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    color: var(--muted);
+}
+
+@media (max-width: 1100px) {
+    .assigned-card .detail-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 700px) {
+    .add-part-form { grid-template-columns: 1fr; }
+}
+
+/* =========================================================
+   INVENTARIO DE REPUESTOS (spare-parts/list.html)
+   Tabla a la izquierda + vista de referencia a la derecha.
+   Reutiliza .kpi-grid, .custom-table, .badge, .row-actions y el modal de base.css.
+   ========================================================= */
+/* Sin repuesto seleccionado la tabla ocupa todo el ancho;
+   con la vista de referencia abierta se abre la columna derecha. */
+.inventory-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 1.5rem;
+}
+.inventory-layout:has(.part-detail.is-open) {
+    grid-template-columns: minmax(0, 1fr) clamp(290px, 26vw, 360px);
+}
+/* Con el panel abierto la tabla se compacta para no necesitar barra horizontal */
+.inventory-layout:has(.part-detail.is-open) #spare-part-table :is(th, td) {
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
+}
+
+/* Botón cuadrado solo con ícono (editar / eliminar en la fila) */
+.btn-icon {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    justify-content: center;
+}
+.btn-icon [data-lucide] { width: 16px; height: 16px; }
+
+/* Sin ancho mínimo: la tabla se ajusta al espacio y no aparece barra horizontal */
+#spare-part-table { min-width: 0; }
+#spare-part-table :is(th, td) { padding-left: 1rem; padding-right: 1rem; }
+#spare-part-table td { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+
+.part-code {
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: var(--muted);
+    white-space: nowrap;
+}
+.part-name { font-weight: 600; color: var(--ink); }
+.part-price { white-space: nowrap; }
+
+.tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+/* ---------- Vista de referencia ---------- */
+.part-detail {
+    position: sticky;
+    top: 1.5rem;
+    padding: 1.25rem;
+}
+.part-detail:not(.is-open) { display: none; }
+.part-detail.is-open { animation: fade-in .2s ease-out; }
+
+.part-detail-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.7rem;
+    border-bottom: 1px solid var(--border);
+}
+.part-detail-title h2 { font-size: 1rem; font-weight: 600; }
+.part-detail-title .btn-close-modal { width: 30px; height: 30px; font-size: 1.3rem; }
+
+.part-image {
+    aspect-ratio: 16 / 10;
+    margin-bottom: 1.1rem;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+}
+.part-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.part-image-empty {
+    height: 100%;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+.part-image-empty [data-lucide] { width: 30px; height: 30px; color: var(--muted); }
+
+.part-detail-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+.part-detail-head h3 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.part-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem 1rem;
+    margin: 0 0 1.25rem;
+}
+.part-facts .full { grid-column: 1 / -1; }
+.part-facts dt {
+    margin-bottom: 0.2rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--lavender);
+}
+.part-facts dd {
+    margin: 0;
+    font-weight: 600;
+    color: var(--ink);
+}
+.part-facts dd.text { font-weight: 400; font-size: 0.9rem; color: var(--muted); }
+
+.part-detail-actions { display: flex; justify-content: center; }
+
+/* ---------- Modal del repuesto ---------- */
+.modal-card .checkbox-grid { margin-bottom: 0; background: #fff; }
+.image-field {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+.image-field .field { flex: 1; margin-bottom: 0; }
+.image-field .thumb-lg { width: 96px; height: 96px; }
+
+/* En pantallas angostas no caben las dos columnas: el panel baja debajo de la tabla */
+@media (max-width: 1279px) {
+    .inventory-layout,
+    .inventory-layout:has(.part-detail.is-open) { grid-template-columns: minmax(0, 1fr); }
+    .inventory-layout:has(.part-detail.is-open) #spare-part-table :is(th, td) {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    .part-detail { position: static; }
+}
+@media (max-width: 900px) {
+    #spare-part-table :is(th, td),
+    .inventory-layout:has(.part-detail.is-open) #spare-part-table :is(th, td) { padding-left: 0.5rem; padding-right: 0.5rem; }
+}
+
+/* =========================================================
+   TONO DE LA HORA EN LAS TARJETAS
+   Las tarjetas de la página y el modal toman el mismo tono del saludo
+   (data-daypart de fragments/header :: welcome): amarillo cálido en la
+   mañana, durazno en la tarde y lavanda en la noche. Va como un brillo
+   suave en la esquina superior izquierda, encima del color de cada tarjeta.
+   Las tarjetas de resumen (.kpi-card) no llevan tono.
+   ========================================================= */
+body:has(.welcome[data-daypart="morning"]) {
+    --card-tone:
+        radial-gradient(ellipse 520px 220px at 0% 0%, rgba(252, 211, 77, 0.14), transparent 70%),
+        radial-gradient(ellipse 420px 200px at 100% 0%, rgba(147, 197, 253, 0.10), transparent 70%);
+}
+body:has(.welcome[data-daypart="afternoon"]) {
+    --card-tone:
+        radial-gradient(ellipse 520px 220px at 0% 0%, rgba(251, 146, 60, 0.11), transparent 70%),
+        radial-gradient(ellipse 420px 200px at 100% 0%, rgba(192, 132, 252, 0.09), transparent 70%);
+}
+body:has(.welcome[data-daypart="night"]) {
+    --card-tone:
+        radial-gradient(ellipse 520px 220px at 0% 0%, rgba(128, 52, 210, 0.10), transparent 70%),
+        radial-gradient(ellipse 420px 200px at 100% 0%, rgba(79, 70, 229, 0.07), transparent 70%);
+}
+
+:is(.card, .modal-card):not(.kpi-card) {
+    background-image: var(--card-tone, none);
+    background-repeat: no-repeat;
+}
+
+
+/* =========================================================
+   MODAL DE CONFIRMACIÓN (panel.js · askConfirmation)
+   Reemplaza el confirm() del navegador en los botones con hx-confirm.
+   Usa .modal-overlay y .modal-card de base.css; aquí solo va lo propio.
+   ========================================================= */
+.confirm-card {
+    width: min(420px, 100%);
+    padding: 1.75rem 1.75rem 1.5rem;
+    align-items: center;
+    text-align: center;
+}
+.confirm-icon {
+    display: grid;
+    place-items: center;
+    width: 54px;
+    height: 54px;
+    margin-bottom: 0.9rem;
+    border-radius: 50%;
+    color: var(--primary);
+    background: var(--tint);
+}
+.confirm-icon [data-lucide],
+.confirm-icon svg { width: 26px; height: 26px; }
+.confirm-modal.is-danger .confirm-icon { color: #C2255C; background: #fde8ef; }
+
+.confirm-card h2 {
+    margin: 0 0 0.4rem;
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+.confirm-card p {
+    margin: 0 0 1.4rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--muted);
+}
+.confirm-actions {
+    display: flex;
+    justify-content: center;
+    gap: 0.6rem;
+    width: 100%;
+}
+.confirm-actions .btn { min-width: 120px; justify-content: center; }
+
+/* Botón rojo sólido (confirmar eliminación) */
+.btn-danger {
+    background: #C2255C;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(194, 37, 92, 0.3);
+}
+.btn-danger:hover { background: #a61e4d; transform: translateY(-1px); }
+
+@media (max-width: 640px) {
+    .confirm-card { border-radius: 18px 18px 0 0; }
+    .confirm-actions { flex-direction: column-reverse; }
+}
+
+
+/* =========================================================
+   PANEL DEL MECÁNICO (repairs/assigned.html)
+   Mismo diseño del operador: .kpi-grid, .custom-table, .detail-card.
+   ========================================================= */
+/* Motivo: columna angosta para que la tabla no crezca (el texto completo está en el detalle) */
+.cell-reason { max-width: 280px; }
+
+.parts-block { padding-top: 0.25rem; }
+
+/* Repuestos compatibles con el modelo (RF-12 / RF-19): lista desplegable con <details> */
+.compat-parts {
+    margin: 0 0 1rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+}
+.compat-parts summary {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.7rem 0.9rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+    list-style: none;
+    border-radius: 10px;
+}
+.compat-parts summary::-webkit-details-marker { display: none; }
+.compat-parts summary:hover { background: var(--row-selected); }
+.compat-parts summary [data-lucide],
+.compat-parts summary svg { width: 17px; height: 17px; color: var(--primary); }
+.compat-parts summary .compat-chevron { margin-left: auto; color: var(--muted); transition: transform 0.2s ease; }
+.compat-parts[open] summary .compat-chevron { transform: rotate(180deg); }
+.compat-parts[open] summary { border-bottom: 1px solid var(--border); border-radius: 10px 10px 0 0; }
+.compat-parts .form-hint { margin: 0; padding: 0.8rem 0.9rem; }
+
+.compat-list {
+    margin: 0;
+    padding: 0.25rem 0;
+    list-style: none;
+}
+.compat-list li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.6rem 0.9rem;
+    border-bottom: 1px solid var(--border-soft);
+}
+.compat-list li:last-child { border-bottom: 0; }
+.compat-list li > div { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.compat-list strong { font-size: 0.9rem; font-weight: 600; }
+.compat-list .part-price { font-size: 0.88rem; }
+.compat-list li.is-empty strong,
+.compat-list li.is-empty .part-price { color: var(--muted); }
+.parts-block .form-hint { margin: 0.5rem 0 1rem; }
+.detail-card #detail-map { margin-top: 0; }
+
+/* =========================================================
+   FILTRO DE REPUESTOS (spare-parts/list.html · RF-19)
+   ========================================================= */
+.parts-filter { flex-wrap: wrap; justify-content: flex-start; }
+.parts-filter .search-box { flex: 1 1 240px; }
+.filter-select {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--row-selected);
+    color: var(--muted);
+}
+.filter-select:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(128, 52, 210, 0.14); }
+.filter-select select {
+    min-width: 170px;
+    padding: 0.55rem 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 0.87rem;
+    color: var(--ink);
+    cursor: pointer;
+}
+.filter-check {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.87rem;
+    color: var(--ink);
+    cursor: pointer;
+}
+.filter-check input { width: 16px; height: 16px; accent-color: var(--primary); }

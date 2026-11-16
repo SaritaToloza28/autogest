@@ -1,8 +1,16 @@
 /* ==========================================================
-
    Autogest · Login — layout de la página de inicio de sesión
    Usa las variables, campos, botón y toasts de base.css
    ========================================================== */
+
+/* ---------- Logo del taller (encima de "Autogest") ---------- */
+.auth-logo {
+    display: block;
+    width: 64px;
+    height: 64px;
+    margin: 0 auto .4rem;
+    filter: drop-shadow(0 6px 14px rgba(128, 52, 210, .25));
+}
 
 /* ---------- Fondo y página ---------- */
 body.auth-page {
@@ -11,11 +19,10 @@ body.auth-page {
     min-height: 100dvh;
     font-family: var(--font-body);
     color: var(--ink);
+    /* Foto del taller (css/images/taller.jpg) con el mismo velo lavanda del portal público */
     background:
-        radial-gradient(ellipse 50% 60% at 74% 52%, rgba(255, 255, 255, .85), transparent 70%),
-        radial-gradient(ellipse 38% 30% at 74% 66%, rgba(128, 52, 210, .10), transparent 70%),
-        linear-gradient(135deg, var(--bg) 0%, var(--bg-2) 100%);
-    background-attachment: fixed;
+        linear-gradient(135deg, rgba(243, 238, 249, .80) 0%, rgba(233, 221, 255, .86) 100%),
+        url("images/taller.jpg") center / cover no-repeat fixed;
     overflow-x: hidden;
 }
 
@@ -32,7 +39,9 @@ body.auth-page {
     top: 0;
     left: 0;
     bottom: 0;
-    width: 50vw;
+    /* Ancho en rem (no solo en vw): con el zoom del navegador el panel, los engranajes
+       y la tarjeta cambian de tamaño juntos; la foto del taller ocupa el resto. */
+    width: clamp(24rem, 50vw, 46rem);
     height: 100dvh;
     z-index: 1;
     overflow: hidden;
@@ -72,14 +81,21 @@ body.auth-page {
 .auth-content .subtitle { text-align: center; }
 .auth-content .subtitle { margin: .35rem 0 .75rem; }
 
-/* Capa de engranajes del fondo del formulario */
+/* Capa de engranajes del fondo del formulario.
+   Tamaño en rem y centrada en el panel: así crece y se achica con la tarjeta
+   al hacer zoom (antes medía lo mismo que la ventana y solo la tarjeta cambiaba). */
 .gears {
     position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
+    top: 50%;
+    left: 50%;
+    width: 52rem;
+    height: 72.8rem;                            /* proporción del dibujo: 400 x 560 */
+    transform: translate(-50%, -50%);
     z-index: 0;
     pointer-events: none;
+    /* Bordes que se desvanecen: con mucho zoom afuera, el dibujo no termina en un corte recto */
+    -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 14%, #000 86%, transparent 100%);
+    mask-image: linear-gradient(180deg, transparent 0%, #000 14%, #000 86%, transparent 100%);
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -91,12 +107,6 @@ body.auth-page {
 
 /* ---------- Responsive para móviles ---------- */
 @media (max-width: 900px) {
-    body.auth-page {
-        background:
-            radial-gradient(ellipse 80% 40% at 50% 24%, rgba(255, 255, 255, .85), transparent 70%),
-            radial-gradient(ellipse 60% 30% at 50% 30%, rgba(128, 52, 210, .10), transparent 70%),
-            linear-gradient(160deg, var(--bg) 0%, var(--bg-2) 100%);
-    }
     .auth-card {
         top: auto;
         height: auto;

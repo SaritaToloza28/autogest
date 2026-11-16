@@ -1,7 +1,7 @@
-<!-- templates/repairs/create.html
+<!-- templates/repairs/form.html
      Fragmentos del modal "Nueva orden" / "Editar orden". No lleva <html> ni <body>.
-     · GET /repairs/form       -> repairs/create :: modal   (nueva orden, empieza buscando la placa)
-     · GET /repairs/{id}/edit  -> repairs/create :: modal   (edición, el vehículo queda fijo)
+     · GET /repairs/form       -> repairs/form :: modal   (nueva orden, empieza buscando la placa)
+     · GET /repairs/{id}/edit  -> repairs/form :: modal   (edición, el vehículo queda fijo)
      · GET /repairs/vehicle-lookup, POST /repairs/vehicle, PUT /repairs/vehicle/{id}
                                -> repairs/vehicle-response (solo la sección del vehículo)
 
@@ -28,7 +28,7 @@
                   hx-swap="none">
 
                 <!-- 1. Vehículo: buscar placa -> registrar o actualizar -->
-                <fieldset th:replace="~{repairs/create :: vehicle-section}"></fieldset>
+                <fieldset th:replace="~{repairs/form :: vehicle-section}"></fieldset>
 
                 <!-- 2. Orden: en una orden nueva aparece con "Continuar" -->
                 <fieldset id="service-section" class="form-section" th:hidden="${repairId == null}">
@@ -110,22 +110,26 @@
                     <option th:each="c : ${plateColors}"
                             th:value="${c}"
                             th:text="${c.label}"
+                            th:data-example="${c.example}"
                             th:selected="${c == vehicleForm.plateColor}">Amarilla (particular)</option>
                 </select>
             </div>
 
+            <!-- El placeholder y la vista previa muestran el ejemplo del color elegido (panel.js lo cambia al elegir otro) -->
             <div class="field">
                 <label for="plate">Placa *</label>
                 <input type="text" id="plate" name="licensePlate" placeholder="ABC-123"
+                       th:placeholder="${vehicleForm.plateColor != null} ? ${vehicleForm.plateColor.example} : 'ABC-123'"
                        maxlength="8" autocomplete="off" style="text-transform: uppercase;"
                        th:value="${vehicleForm.licensePlate}"
-                       oninput="document.getElementById('plate-preview').textContent = this.value.toUpperCase() || 'ABC-123'">
+                       oninput="document.getElementById('plate-preview').textContent = this.value.toUpperCase() || this.placeholder">
             </div>
 
             <div class="field preview-field">
                 <label>Vista previa</label>
                 <div id="plate-preview" class="plate-badge inline-badge"
-                     th:text="${#strings.isEmpty(vehicleForm.licensePlate)} ? 'ABC-123' : ${#strings.toUpperCase(vehicleForm.licensePlate)}">ABC-123</div>
+                     th:with="example=${vehicleForm.plateColor != null} ? ${vehicleForm.plateColor.example} : 'ABC-123'"
+                     th:text="${#strings.isEmpty(vehicleForm.licensePlate)} ? ${example} : ${#strings.toUpperCase(vehicleForm.licensePlate)}">ABC-123</div>
             </div>
         </div>
 

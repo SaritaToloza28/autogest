@@ -1,22 +1,98 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
-<head>
+<head th:replace="~{fragments/head :: head('Inicio', 'public')}">
+    <!-- Solo para la vista previa sin Spring (ver fragments/head.html) -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Autogest</title>
-    <link rel="stylesheet" href="../../static/css/styles.css" th:href="@{/css/styles.css}">
+    <link rel="icon" type="image/png" href="../../static/images/logo-taller.png">
+    <title>Inicio | Autogest</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="../../static/css/base.css">
+    <link rel="stylesheet" href="../../static/css/public.css">
+    <script defer src="../../static/js/lucide.min.js"></script>
+    <script defer src="../../static/js/public.js"></script>
 </head>
-<body class="auth-page">
+<!-- public-home: fondo con la foto del taller (public.css) -->
+<body class="public-page public-home">
 
-<main class="card auth-card">
-    <h1 class="brand">Autogest</h1>
+<main class="public-card">
+    <img class="public-logo" src="../../static/images/logo-taller.png"
+         th:src="@{/images/logo-taller.png}" alt="">
+    <h1 class="brand">Auto<span>gest</span></h1>
     <p class="subtitle">Sistema de gestión para taller automotriz</p>
 
-    <div class="actions actions-stack">
-        <a class="btn btn-primary btn-block" href="../auth/login.html" th:href="@{/login}">Iniciar sesión</a>
-        <a class="btn btn-block" href="repair-status.html" th:href="@{/repair-status}">Consultar mi reparación</a>
+    <div class="public-actions">
+        <a class="btn-submit" href="../auth/login.html" th:href="@{/login}">Iniciar sesión</a>
+        <a class="btn-ghost" href="repair-status.html" th:href="@{/repair-status}">Consultar mi reparación</a>
     </div>
 </main>
+
+<!-- ======================= PIE DE PÁGINA =======================
+     Íconos de Lucide (<i data-lucide="...">), igual que en el panel; las siluetas de arriba son un SVG. -->
+<footer class="site-footer">
+
+    <!-- Siluetas de herramientas (engranajes, llaves, destornilladores, tuercas) apoyadas
+         sobre el pie: static/images/footer-tools.svg, del mismo color del pie -->
+    <img class="footer-tools" src="../../static/images/footer-tools.svg"
+         th:src="@{/images/footer-tools.svg}" alt="" aria-hidden="true">
+
+    <div class="footer-body">
+        <div class="footer-grid">
+            <section>
+                <h2>Sobre Autogest</h2>
+                <p>Taller automotriz especializado en mantenimiento y reparación. Recibimos tu vehículo,
+                    te mantenemos al día con cada avance y usamos repuestos de calidad.</p>
+            </section>
+
+            <section>
+                <h2>Contacto</h2>
+                <ul class="footer-list">
+                    <li><i data-lucide="map-pin"></i><span>Calle 00 # 00-00<br>Sede Tunja · Boyacá</span></li>
+                    <li><i data-lucide="phone"></i><a href="tel:+573000000000">+57 300 000 0000</a></li>
+                    <li><i data-lucide="mail"></i><a href="mailto:contacto@autogest.com">contacto@autogest.com</a></li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Enlaces</h2>
+                <ul class="footer-list footer-links">
+                    <li><i data-lucide="chevron-right"></i><a href="index.html" th:href="@{/}">Inicio</a></li>
+                    <li><i data-lucide="chevron-right"></i><a href="../auth/login.html" th:href="@{/login}">Iniciar sesión</a></li>
+                    <li><i data-lucide="chevron-right"></i><a href="repair-status.html" th:href="@{/repair-status}">Consultar mi reparación</a></li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Horario</h2>
+                <ul class="footer-list">
+                    <li><i data-lucide="clock"></i><span>Lunes a viernes<br>8:00 a. m. – 6:00 p. m.</span></li>
+                    <li><i data-lucide="clock"></i><span>Sábados<br>8:00 a. m. – 1:00 p. m.</span></li>
+                </ul>
+            </section>
+        </div>
+
+        <!-- Redes (enlaces de ejemplo: cámbialos por los reales) -->
+        <div class="footer-social">
+            <a href="#" aria-label="Facebook"><i data-lucide="facebook"></i></a>
+            <a href="#" aria-label="Instagram"><i data-lucide="instagram"></i></a>
+            <a href="#" aria-label="WhatsApp"><i data-lucide="message-circle"></i></a>
+        </div>
+
+        <div class="footer-brand">
+            <span class="footer-brand-icon">
+                <img src="../../static/images/logo-taller.png" th:src="@{/images/logo-taller.png}" alt="">
+            </span>
+            <span>Auto<span>gest</span></span>
+        </div>
+
+        <p class="footer-copy">
+            © <span th:text="${#temporals.year(#temporals.createNow())}">2026</span>
+            Autogest · Sistema de gestión para taller automotriz
+        </p>
+    </div>
+</footer>
 
 </body>
 </html>

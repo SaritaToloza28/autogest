@@ -1,0 +1,110 @@
+<!-- templates/spare-parts/form.html
+     Modal "Nuevo repuesto" / "Editar repuesto". No lleva <html> ni <body>.
+     · GET /spare-parts/form       -> spare-parts/form :: form   (nuevo)
+     · GET /spare-parts/{id}/edit  -> spare-parts/form :: form   (edición)
+     Se abre con dialog.show() (panel.js) y se cierra con ✕, "Cancelar", clic afuera o Escape.
+     Al guardar responde spare-parts/response: tabla, KPIs, detalle, toast y cierre del modal. -->
+<dialog class="modal-overlay" id="modal-spare-part" th:fragment="form"
+        aria-labelledby="modal-spare-part-title" xmlns:th="http://www.thymeleaf.org">
+
+    <!-- Botón invisible que cubre el fondo: clic fuera de la tarjeta = cerrar -->
+    <button type="button" class="modal-dismiss" aria-label="Cerrar" onclick="closeModal(this)"></button>
+
+    <div class="modal-card">
+
+        <div class="modal-header">
+            <h2 id="modal-spare-part-title"
+                th:text="${sparePartId == null} ? 'Nuevo repuesto' : 'Editar repuesto'">Nuevo repuesto</h2>
+            <button type="button" class="btn-close-modal" aria-label="Cerrar" onclick="closeModal(this)">&times;</button>
+        </div>
+
+        <div class="modal-body">
+            <!-- Lleva imagen: va como multipart y la edición también es POST (a /spare-parts/{id}) -->
+            <form id="spare-part-form"
+                  th:hx-post="${sparePartId == null} ? @{/spare-parts} : @{/spare-parts/{id}(id=${sparePartId})}"
+                  hx-encoding="multipart/form-data"
+                  hx-swap="none">
+
+                <fieldset class="form-section">
+                    <legend><i data-lucide="package"></i> Datos del repuesto</legend>
+
+                    <div class="field">
+                        <label for="name">Nombre *</label>
+                        <input id="name" type="text" name="name" maxlength="100" required
+                               placeholder="Pastillas de freno delanteras"
+                               th:value="${sparePart.name}">
+                    </div>
+
+                    <div class="form-row flex-3">
+                        <div class="field">
+                            <label for="eanCode">Código EAN-13 *</label>
+                            <input id="eanCode" type="text" name="eanCode" inputmode="numeric"
+                                   minlength="13" maxlength="13" pattern="\d{13}" required
+                                   placeholder="7701234000028"
+                                   th:value="${sparePart.eanCode}">
+                        </div>
+                        <div class="field">
+                            <label for="price">Precio *</label>
+                            <input id="price" type="number" name="price" min="0.01" step="0.01" required
+                                   placeholder="120000"
+                                   th:value="${sparePart.price}">
+                        </div>
+                        <div class="field">
+                            <label for="stock">Stock *</label>
+                            <input id="stock" type="number" name="stock" min="0" step="1" required
+                                   value="0" th:value="${sparePart.stock}">
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label for="description">Descripción</label>
+                        <textarea id="description" name="description" maxlength="500" rows="2"
+                                  placeholder="Juego de 4 pastillas cerámicas"
+                                  th:text="${sparePart.description}"></textarea>
+                    </div>
+                </fieldset>
+
+                <fieldset class="form-section">
+                    <legend><i data-lucide="layers"></i> Modelos compatibles</legend>
+
+                    <p class="form-hint" th:if="${#lists.isEmpty(carModels)}" hidden th:hidden="${false}">No hay modelos registrados</p>
+
+                    <div class="field checkbox-grid" th:unless="${#lists.isEmpty(carModels)}">
+                        <label class="checkbox" th:each="m : ${carModels}">
+                            <input type="checkbox" name="compatibleModelIds"
+                                   value="1"
+                                   th:value="${m.id}"
+                                   th:checked="${sparePart.compatibleModelIds != null
+                                                 and #sets.contains(sparePart.compatibleModelIds, m.id)}">
+                            <span th:text="|${m.brand} ${m.name}|">Mazda 3</span>
+                        </label>
+                    </div>
+                </fieldset>
+
+                <fieldset class="form-section">
+                    <legend><i data-lucide="image"></i> Imagen de referencia</legend>
+
+                    <div class="image-field">
+                        <!-- hidden: en la vista previa no hay imagen; Spring quita el atributo -->
+                        <img class="thumb-lg" th:if="${sparePart.imagePath != null}"
+                             hidden th:hidden="${false}"
+                             alt="Imagen actual del repuesto"
+                             th:src="@{${sparePart.imagePath}}">
+
+                        <div class="field">
+                            <label for="image"
+                                   th:text="${sparePartId == null} ? 'Imagen (opcional)' : 'Nueva imagen (déjala vacía para conservar la actual)'">Imagen (opcional)</label>
+                            <input id="image" type="file" name="image" accept="image/jpeg,image/png,image/webp">
+                        </div>
+                    </div>
+                </fieldset>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal(this)">Cancelar</button>
+                    <button type="submit" class="btn btn-primary btn-submit"
+                            th:text="${sparePartId == null} ? '+ Crear repuesto' : 'Guardar cambios'">+ Crear repuesto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</dialog>

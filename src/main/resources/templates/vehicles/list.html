@@ -8,25 +8,25 @@
     Fragmento que usan el controlador y vehicles/response.html (NO renombrar):
       - th:fragment="table" → #vehicle-table (hx-swap-oob en response)
 -->
-<head>
+<head th:replace="~{fragments/head :: head('Recepción vehicular', 'panel')}">
+    <!-- Solo para la vista previa sin Spring (ver fragments/head.html) -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="../../static/images/logo-taller.png">
     <title>Recepción vehicular | Autogest</title>
-
-    <!-- Mismas fuentes y hojas que el dashboard -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
-
-    <link rel="stylesheet" href="../../static/css/base.css" th:href="@{/css/base.css}">
-    <link rel="stylesheet" href="../../static/css/panel.css" th:href="@{/css/panel.css}">
+    <link rel="stylesheet" href="../../static/css/base.css">
+    <link rel="stylesheet" href="../../static/css/panel.css">
+    <script defer src="../../static/js/htmx.min.js"></script>
+    <script defer src="../../static/js/lucide.min.js"></script>
+    <script defer src="../../static/js/panel.js"></script>
 </head>
 
-<!-- preview-operator: en la vista previa muestra solo el menú del operador -->
-<body class="dashboard-body preview-operator"
-      hx-headers='{"X-CSRF-TOKEN": "estatico"}'
-      th:hx-headers="|{&quot;${_csrf.headerName}&quot;: &quot;${_csrf.token}&quot;}|">
+<!-- preview-operator: en la vista previa muestra solo el menú del operador.
+     El token CSRF lo agrega panel.js a cada petición HTMX (meta _csrf de fragments/head). -->
+<body class="dashboard-body preview-operator">
 
 <!-- Notificaciones (fragments/toast.html las agrega aquí) -->
 <div id="toast-container" role="status" aria-live="polite"></div>
@@ -45,10 +45,21 @@
     <main id="main-content" class="main-content">
 
         <header class="top-header">
-            <span class="welcome-msg">
-                ¡Bienvenid@, <strong sec:authentication="name">operador1</strong>!
-            </span>
+            <!-- Saludo según la hora: Spring lo reemplaza por fragments/header :: welcome -->
+            <div class="welcome"
+                 th:replace="~{fragments/header :: welcome}"
+                 hx-get="../fragments/header.html"
+                 hx-select=".welcome"
+                 hx-trigger="load"
+                 hx-swap="outerHTML"></div>
             <div class="header-right">
+                <!-- Rol de la sesión: fragments/header :: role -->
+                <span class="role-badge"
+                      th:replace="~{fragments/header :: role}"
+                      hx-get="../fragments/header.html"
+                      hx-select=".role-badge"
+                      hx-trigger="load"
+                      hx-swap="outerHTML"></span>
                 <!-- Abre el modal: GET /vehicles/form -> vehicles/form :: modal -->
                 <button type="button" class="btn btn-primary"
                         hx-get="form.html"
@@ -62,9 +73,9 @@
 
         <section class="page-title-section">
             <div>
-                <span class="subtitle">RECEPCIÓN VEHICULAR</span>
-                <h1>Vehículos del taller</h1>
-                <p>Consulta, registra y actualiza la información de los vehículos que llegan al taller.</p>
+                <span class="subtitle">TALLER · OPERADOR</span>
+                <h1>Recepción vehicular</h1>
+                <p class="subtitle">Registra los vehículos atendidos con su placa colombiana, propietario y modelo.</p>
             </div>
         </section>
 
@@ -180,9 +191,5 @@
 <!-- HTMX inserta aquí el modal (vehicles/form :: modal) -->
 <div id="modal-container"></div>
 
-<script src="../../static/js/htmx.min.js" th:src="@{/js/htmx.min.js}"></script>
-<script src="../../static/js/lucide.min.js" th:src="@{/js/lucide.min.js}"></script>
-<!-- panel.js: abre y cierra el modal, dibuja los íconos y maneja el buscador de modelo -->
-<script src="../../static/js/panel.js" th:src="@{/js/panel.js}"></script>
 </body>
 </html>

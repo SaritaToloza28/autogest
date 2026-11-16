@@ -1,97 +1,166 @@
 <!DOCTYPE html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org">
-<head>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/head :: head('Catálogo de modelos', 'panel')}">
+    <!-- Solo para la vista previa sin Spring (ver fragments/head.html) -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Modelos | Autogest</title>
-    <link rel="stylesheet" href="../../static/css/styles.css" th:href="@{/css/styles.css}">
-    <script src="../../static/js/htmx.min.js" th:src="@{/js/htmx.min.js}"></script>
+    <link rel="icon" type="image/png" href="../../static/images/logo-taller.png">
+    <title>Catálogo de modelos | Autogest</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="../../static/css/base.css">
+    <link rel="stylesheet" href="../../static/css/panel.css">
+    <script defer src="../../static/js/htmx.min.js"></script>
+    <script defer src="../../static/js/lucide.min.js"></script>
+    <script defer src="../../static/js/panel.js"></script>
 </head>
-<body hx-headers='{"X-CSRF-TOKEN": "estatico"}'
-      th:hx-headers="|{&quot;${_csrf.headerName}&quot;: &quot;${_csrf.token}&quot;}|">
 
-<div id="toast-container"></div>
+<body class="dashboard-body preview-admin">
 
-<main class="container">
-    <h1>Modelos de vehículo</h1>
+<!-- Notificaciones (fragments/toast.html las agrega aquí) -->
+<div id="toast-container" role="status" aria-live="polite"></div>
 
-    <form id="car-model-form" class="card" th:fragment="form"
-          hx-post="/car-models"
-          th:hx-post="${carModelId == null} ? @{/car-models}"
-          th:hx-put="${carModelId != null} ? @{/car-models/{id}(id=${carModelId})}"
-          hx-target="this"
-          hx-swap="outerHTML">
+<div class="app-shell">
 
-        <h2 th:text="${carModelId == null} ? 'Nuevo modelo' : 'Editar modelo'">Nuevo modelo</h2>
+    <aside class="sidebar"
+           th:replace="~{fragments/sidebar :: sidebar('car-models')}"
+           hx-get="../fragments/sidebar.html"
+           hx-select=".sidebar"
+           hx-trigger="load"
+           hx-swap="outerHTML"></aside>
 
-        <div class="field">
-            <label for="brand">Marca</label>
-            <input id="brand" type="text" name="brand" maxlength="60" required
-                   value="" th:value="${carModel.brand}">
-        </div>
+    <main id="main-content" class="main-content">
 
-        <div class="field">
-            <label for="name">Modelo</label>
-            <input id="name" type="text" name="name" maxlength="60" required
-                   value="" th:value="${carModel.name}">
-        </div>
+        <header class="top-header">
+            <!-- Saludo según la hora: Spring lo reemplaza por fragments/header :: welcome -->
+            <div class="welcome"
+                 th:replace="~{fragments/header :: welcome}"
+                 hx-get="../fragments/header.html"
+                 hx-select=".welcome"
+                 hx-trigger="load"
+                 hx-swap="outerHTML"></div>
+            <div class="header-right">
+                <!-- Rol de la sesión: fragments/header :: role -->
+                <span class="role-badge"
+                      th:replace="~{fragments/header :: role}"
+                      hx-get="../fragments/header.html"
+                      hx-select=".role-badge"
+                      hx-trigger="load"
+                      hx-swap="outerHTML"></span>
+            </div>
+        </header>
 
-        <div class="actions">
-            <button type="submit" class="btn btn-primary"
-                    th:text="${carModelId == null} ? 'Guardar' : 'Actualizar'">Guardar</button>
+        <section class="page-title-section">
+            <div>
+                <span class="subtitle">ADMINISTRACIÓN</span>
+                <h1>Catálogo de modelos</h1>
+                <p class="subtitle">Marcas y modelos que atiende el taller. Se usan en vehículos y repuestos compatibles.</p>
+            </div>
+        </section>
 
-            <button type="button" class="btn" th:if="${carModelId != null}"
-                    hx-get="/car-models/form"
-                    th:hx-get="@{/car-models/form}"
-                    hx-target="#car-model-form"
-                    hx-swap="outerHTML">Cancelar</button>
-        </div>
-    </form>
+        <!-- Formulario: crear y editar (car-models/response lo devuelve con el toast) -->
+        <form id="car-model-form" class="card form-card" th:fragment="form"
+              hx-post="/car-models"
+              th:hx-post="${carModelId == null} ? @{/car-models}"
+              th:hx-put="${carModelId != null} ? @{/car-models/{id}(id=${carModelId})}"
+              hx-target="this"
+              hx-swap="outerHTML">
 
-    <table id="car-model-table" class="card table" th:fragment="table" hx-swap-oob="true">
-        <thead>
-        <tr>
-            <th>Marca</th>
-            <th>Modelo</th>
-            <th>Acciones</th>
-        </tr>
-        </thead>
+            <div class="form-card-header">
+                <h2 th:text="${carModelId == null} ? 'Nuevo modelo' : 'Editar modelo'">Nuevo modelo</h2>
+            </div>
 
-        <tbody>
-        <tr th:each="m : ${carModels}">
-            <td th:text="${m.brand}">Mazda</td>
-            <td th:text="${m.name}">3</td>
-            <td class="actions">
-                <button type="button" class="btn"
-                        hx-get="/car-models/1/edit"
-                        th:hx-get="@{/car-models/{id}/edit(id=${m.id})}"
+            <div class="form-grid">
+                <div class="field">
+                    <label for="brand">Marca</label>
+                    <input id="brand" type="text" name="brand" maxlength="60" required
+                           placeholder="Mazda"
+                           value="" th:value="${carModel.brand}">
+                </div>
+
+                <div class="field">
+                    <label for="name">Modelo</label>
+                    <input id="name" type="text" name="name" maxlength="60" required
+                           placeholder="CX-5"
+                           value="" th:value="${carModel.name}">
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-outline" th:if="${carModelId != null}"
+                        hx-get="/car-models/form"
+                        th:hx-get="@{/car-models/form}"
                         hx-target="#car-model-form"
-                        hx-swap="outerHTML">Editar</button>
+                        hx-swap="outerHTML">Cancelar</button>
 
-                <button type="button" class="btn btn-danger"
-                        hx-delete="/car-models/1"
-                        th:hx-delete="@{/car-models/{id}(id=${m.id})}"
-                        hx-swap="none"
-                        hx-confirm="¿Eliminar este modelo?"
-                        th:hx-confirm="|¿Eliminar ${m.brand} ${m.name}?|">Eliminar</button>
-            </td>
-        </tr>
+                <button type="submit" class="btn btn-primary">
+                    <i data-lucide="save"></i>
+                    <span th:text="${carModelId == null} ? 'Guardar' : 'Actualizar'">Guardar</span>
+                </button>
+            </div>
+        </form>
 
-        <tr th:remove="all">
-            <td>Chevrolet</td>
-            <td>Spark</td>
-            <td class="actions">
-                <button type="button" class="btn">Editar</button>
-                <button type="button" class="btn btn-danger">Eliminar</button>
-            </td>
-        </tr>
+        <!-- Tabla (vuelve con hx-swap-oob después de guardar o eliminar) -->
+        <section class="table-container card" aria-label="Modelos de vehículo">
+            <table id="car-model-table" class="custom-table static-rows" th:fragment="table"
+                   th:hx-swap-oob="${oob} ? 'true'">
+                <thead>
+                <tr>
+                    <th scope="col">Marca</th>
+                    <th scope="col">Modelo</th>
+                    <th scope="col"><span class="sr-only">Acciones</span></th>
+                </tr>
+                </thead>
 
-        <tr th:if="${#lists.isEmpty(carModels)}">
-            <td colspan="3" class="empty">No hay modelos registrados</td>
-        </tr>
-        </tbody>
-    </table>
-</main>
+                <tbody>
+                <tr th:each="m : ${carModels}">
+                    <td><strong th:text="${m.brand}">Mazda</strong></td>
+                    <td th:text="${m.name}">3</td>
+                    <td>
+                        <div class="row-actions">
+                            <button type="button" class="btn btn-outline btn-sm"
+                                    hx-get="/car-models/1/edit"
+                                    th:hx-get="@{/car-models/{id}/edit(id=${m.id})}"
+                                    hx-target="#car-model-form"
+                                    hx-swap="outerHTML">
+                                <i data-lucide="pencil"></i> Editar
+                            </button>
+
+                            <button type="button" class="btn btn-danger-soft btn-sm"
+                                    hx-delete="/car-models/1"
+                                    th:hx-delete="@{/car-models/{id}(id=${m.id})}"
+                                    hx-swap="none"
+                                    hx-confirm="¿Eliminar este modelo?"
+                                    th:hx-confirm="|¿Eliminar ${m.brand} ${m.name}?|">
+                                <i data-lucide="trash-2"></i> Eliminar
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- Fila de ejemplo: solo en la vista estática, Spring la elimina -->
+                <tr th:remove="all">
+                    <td><strong>Chevrolet</strong></td>
+                    <td>Spark</td>
+                    <td>
+                        <div class="row-actions">
+                            <button type="button" class="btn btn-outline btn-sm"><i data-lucide="pencil"></i> Editar</button>
+                            <button type="button" class="btn btn-danger-soft btn-sm"><i data-lucide="trash-2"></i> Eliminar</button>
+                        </div>
+                    </td>
+                </tr>
+
+                <tr class="empty-row" th:if="${#lists.isEmpty(carModels)}">
+                    <td colspan="3">No hay modelos registrados</td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+</div>
 
 </body>
 </html>

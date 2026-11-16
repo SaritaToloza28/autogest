@@ -1,106 +1,339 @@
 <!DOCTYPE html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org">
-<head>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/head :: head('Mis reparaciones', 'panel')}">
+    <!-- Solo para la vista previa sin Spring (ver fragments/head.html) -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="../../static/images/logo-taller.png">
     <title>Mis reparaciones | Autogest</title>
-    <link rel="stylesheet" href="../../static/css/styles.css" th:href="@{/css/styles.css}">
-    <script src="../../static/js/htmx.min.js" th:src="@{/js/htmx.min.js}"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="../../static/css/base.css">
+    <link rel="stylesheet" href="../../static/css/panel.css">
+    <link rel="stylesheet" href="../../static/css/leaflet.css">
+    <script defer src="../../static/js/htmx.min.js"></script>
+    <script defer src="../../static/js/lucide.min.js"></script>
+    <script defer src="../../static/js/leaflet.js"></script>
+    <script defer src="../../static/js/panel.js"></script>
 </head>
-<body hx-headers='{"X-CSRF-TOKEN": "estatico"}'
-      th:hx-headers="|{&quot;${_csrf.headerName}&quot;: &quot;${_csrf.token}&quot;}|">
 
-<div id="toast-container"></div>
+<body class="dashboard-body preview-mechanic">
 
-<main class="container">
-    <div class="actions">
-        <a class="btn" href="../account/change-password.html" th:href="@{/account/password}">Cambiar mi contraseña</a>
-        <form method="post" action="/logout" th:action="@{/logout}">
-            <button type="submit" class="btn">Cerrar sesión</button>
-        </form>
-    </div>
+<!-- Notificaciones (fragments/toast.html las agrega aquí) -->
+<div id="toast-container" role="status" aria-live="polite"></div>
 
-    <h1>Mis reparaciones</h1>
+<div class="app-shell page-assigned">
 
-    <div id="assigned-list" th:fragment="list" hx-swap-oob="true">
+    <aside class="sidebar"
+           th:replace="~{fragments/sidebar :: sidebar('assigned')}"
+           hx-get="../fragments/sidebar.html"
+           hx-select=".sidebar"
+           hx-trigger="load"
+           hx-swap="outerHTML"></aside>
 
-        <p class="card empty" th:if="${#lists.isEmpty(repairs)}">No tienes reparaciones asignadas</p>
+    <main id="main-content" class="main-content">
 
-        <section class="card" th:each="r : ${repairs}">
-            <h2>
-                <span class="plate plate-COLOR_YELLOW"
-                      th:classappend="${'plate-' + r.vehicle.plateColor}"
-                      th:text="${r.vehicle.licensePlate}">ABC-123</span>
-                <span th:text="|${r.vehicle.carModel.brand} ${r.vehicle.carModel.name}|">Mazda 3</span>
-                <span class="tag" th:text="${r.status.label}">En progreso</span>
-            </h2>
-
-            <p><strong>Motivo:</strong> <span th:text="${r.reason}">Cambio de bujías</span></p>
-            <p>
-                <strong>Servicio:</strong> <span th:text="${r.serviceType.label}">En el taller</span>
-                <span th:if="${r.latitude != null}"
-                      th:text="|(${r.latitude}, ${r.longitude})|">(4.711000, -74.072100)</span>
-            </p>
-            <p><strong>Fecha:</strong> <span th:text="${#temporals.format(r.repairDate, 'dd/MM/yyyy HH:mm')}">18/10/2026 14:00</span></p>
-            <p><strong>Mecánico:</strong> <span th:text="${r.mechanic.fullName}">Carlos Ramírez</span></p>
-
-            <!-- Repuestos usados -->
-            <p th:if="${!#maps.isEmpty(r.usedParts)}"><strong>Repuestos usados:</strong></p>
-            <div class="actions" th:each="p : ${r.usedParts}">
-                <span class="tag" th:text="|${p.key.name} x${p.value}|">Bujía de iridio x4</span>
-
-                <button type="button" class="btn btn-danger" th:if="${r.status.name() == 'IN_PROGRESS'}"
-                        hx-delete="/repairs/assigned/1/parts/1"
-                        th:hx-delete="@{/repairs/assigned/{id}/parts/{partId}(id=${r.id}, partId=${p.key.id})}"
-                        hx-swap="none"
-                        th:hx-confirm="|¿Quitar ${p.key.name}? La cantidad vuelve al stock.|">Quitar</button>
+        <header class="top-header">
+            <!-- Saludo según la hora: Spring lo reemplaza por fragments/header :: welcome -->
+            <div class="welcome"
+                 th:replace="~{fragments/header :: welcome}"
+                 hx-get="../fragments/header.html"
+                 hx-select=".welcome"
+                 hx-trigger="load"
+                 hx-swap="outerHTML"></div>
+            <div class="header-right">
+                <!-- Rol de la sesión: fragments/header :: role -->
+                <span class="role-badge"
+                      th:replace="~{fragments/header :: role}"
+                      hx-get="../fragments/header.html"
+                      hx-select=".role-badge"
+                      hx-trigger="load"
+                      hx-swap="outerHTML"></span>
             </div>
+        </header>
 
-            <!-- Registrar repuesto: solo en progreso y solo los compatibles con el vehículo -->
-            <form class="form-grid" th:if="${r.status.name() == 'IN_PROGRESS'}"
-                  hx-post="/repairs/assigned/1/parts"
-                  th:hx-post="@{/repairs/assigned/{id}/parts(id=${r.id})}"
-                  hx-swap="none">
-                <div class="field">
-                    <label th:for="|sparePartId-${r.id}|" for="sparePartId-1">Repuesto compatible</label>
-                    <select id="sparePartId-1" th:id="|sparePartId-${r.id}|" name="sparePartId" required>
-                        <option value=""
-                                th:text="${#lists.isEmpty(compatibleParts.get(r.id))} ? 'No hay repuestos compatibles' : 'Seleccione…'">Seleccione…</option>
-                        <option th:each="sp : ${compatibleParts.get(r.id)}"
-                                value="1"
-                                th:value="${sp.id}"
-                                th:disabled="${sp.stock == 0}"
-                                th:text="|${sp.name} (stock: ${sp.stock})|">Bujía de iridio (stock: 36)</option>
-                    </select>
-                </div>
-
-                <div class="field">
-                    <label th:for="|quantity-${r.id}|" for="quantity-1">Cantidad</label>
-                    <input id="quantity-1" th:id="|quantity-${r.id}|" type="number" name="quantity"
-                           min="1" step="1" value="1" required>
-                </div>
-
-                <div class="actions">
-                    <button type="submit" class="btn">Agregar repuesto</button>
-                </div>
-            </form>
-
-            <!-- Cambios de estado del mecánico -->
-            <div class="actions">
-                <button type="button" class="btn btn-primary" th:if="${r.status.name() == 'PENDING'}"
-                        hx-post="/repairs/assigned/1/start"
-                        th:hx-post="@{/repairs/assigned/{id}/start(id=${r.id})}"
-                        hx-swap="none">Iniciar reparación</button>
-
-                <button type="button" class="btn btn-primary" th:if="${r.status.name() == 'IN_PROGRESS'}"
-                        hx-post="/repairs/assigned/1/complete"
-                        th:hx-post="@{/repairs/assigned/{id}/complete(id=${r.id})}"
-                        hx-swap="none"
-                        hx-confirm="¿Marcar la reparación como completada? Ya no podrás agregar repuestos.">Terminar reparación</button>
+        <section class="page-title-section">
+            <div>
+                <span class="subtitle">TALLER · MECÁNICO</span>
+                <h1>Mis reparaciones</h1>
+                <p class="subtitle">Revisa el motivo de ingreso, registra los repuestos compatibles y actualiza el estado de tus órdenes.</p>
             </div>
         </section>
-    </div>
-</main>
+
+        <!-- ===================== RESUMEN (mismas tarjetas del operador) =====================
+             Se cuentan en la plantilla con las órdenes asignadas al mecánico de la sesión.
+             Vuelven con hx-swap-oob después de cada acción (oob = true en el controlador). -->
+        <section id="kpi-grid" class="kpi-grid" aria-label="Resumen de mis reparaciones"
+                 th:fragment="kpis" th:hx-swap-oob="${oob} ? 'true'">
+            <div class="kpi-card">
+                <span class="kpi-label">Asignadas</span>
+                <span class="kpi-value" th:text="${#lists.size(repairs)}">8</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">Pendientes</span>
+                <span class="kpi-value" th:text="${#lists.size(repairs.?[status.name() == 'PENDING'])}">2</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">En proceso</span>
+                <span class="kpi-value" th:text="${#lists.size(repairs.?[status.name() == 'IN_PROGRESS'])}">3</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">Terminadas</span>
+                <span class="kpi-value" th:text="${#lists.size(repairs.?[status.name() == 'COMPLETED'])}">3</span>
+            </div>
+        </section>
+
+        <!-- ===================== ÓRDENES ASIGNADAS (RF-16) ===================== -->
+        <section class="table-container card" aria-label="Órdenes asignadas">
+
+            <div class="table-actions">
+                <small><i data-lucide="mouse-pointer-click"></i> Clic en una fila para ver el detalle</small>
+            </div>
+
+            <table class="custom-table">
+                <thead>
+                <tr>
+                    <th scope="col">Orden</th>
+                    <th scope="col">Vehículo</th>
+                    <th scope="col">Motivo</th>
+                    <th scope="col">Servicio</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col"><span class="sr-only">Detalle</span></th>
+                </tr>
+                </thead>
+
+                <!-- statusBadge: color del badge según el estado (mismo mapa del operador) -->
+                <tbody id="assigned-body" th:fragment="assigned-body" th:hx-swap-oob="${oob} ? 'true'"
+                       th:with="statusBadge=${ {'PENDING':'badge-amber','IN_PROGRESS':'badge-purple','COMPLETED':'badge-green','DELIVERED':'badge-gray','CANCELLED':'badge-red'} }">
+
+                <tr th:each="r : ${repairs}"
+                    data-id="1" th:data-id="${r.id}"
+                    th:classappend="${detail != null and detail.id == r.id} ? 'row-selected'"
+                    hx-get="/repairs/assigned/1/detail" th:hx-get="@{/repairs/assigned/{id}/detail(id=${r.id})}"
+                    hx-target="#order-detail" hx-swap="outerHTML">
+                    <td>
+                        <strong class="order-id" th:text="|#${#numbers.formatInteger(r.id, 4)}|">#0248</strong><br>
+                        <small th:text="${#temporals.format(r.repairDate, 'dd/MM/yyyy HH:mm')}">23/10/2026 09:30</small>
+                    </td>
+                    <td>
+                        <div class="plate-badge plate-COLOR_YELLOW"
+                             th:class="|plate-badge plate-${r.vehicle.plateColor}|"
+                             th:text="${r.vehicle.licensePlate}">KTR-482</div><br>
+                        <small th:text="|${r.vehicle.carModel.brand} ${r.vehicle.carModel.name}|">Renault Duster</small>
+                    </td>
+                    <td class="cell-reason" th:text="${r.reason}">Frenos y mantenimiento preventivo</td>
+                    <td th:text="${r.serviceType.label}">En el taller</td>
+                    <td>
+                        <span class="badge badge-purple"
+                              th:class="|badge ${statusBadge[r.status.name()]}|"
+                              th:text="${r.status.label}">En progreso</span>
+                    </td>
+                    <td><i data-lucide="chevron-right"></i></td>
+                </tr>
+
+                <tr th:if="${#lists.isEmpty(repairs)}" class="empty-row" hidden th:hidden="${false}">
+                    <td colspan="6">No tienes reparaciones asignadas</td>
+                </tr>
+
+                <!-- Filas de ejemplo: solo en la vista estática, Spring las elimina -->
+                <tr th:remove="all">
+                    <td><strong class="order-id">#0251</strong><br><small>24/10/2026 08:10</small></td>
+                    <td><div class="plate-badge plate-COLOR_WHITE">JHW-915</div><br><small>Chevrolet Onix</small></td>
+                    <td class="cell-reason">Asistencia en carretera: cambio de batería</td>
+                    <td>A domicilio</td>
+                    <td><span class="badge badge-amber">Pendiente</span></td>
+                    <td><i data-lucide="chevron-right"></i></td>
+                </tr>
+                <tr th:remove="all">
+                    <td><strong class="order-id">#0239</strong><br><small>20/10/2026 15:40</small></td>
+                    <td><div class="plate-badge plate-COLOR_YELLOW">MZX-318</div><br><small>Mazda 3</small></td>
+                    <td class="cell-reason">Revisión de suspensión</td>
+                    <td>En el taller</td>
+                    <td><span class="badge badge-green">Completada</span></td>
+                    <td><i data-lucide="chevron-right"></i></td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- ===================== DETALLE DE LA ORDEN =====================
+             GET /repairs/assigned/{id}/detail devuelve esta sección con "detail" (la orden)
+             y "compatibleParts" (repuestos compatibles con el modelo del vehículo, RF-19).
+             Sin orden seleccionada muestra un mensaje. -->
+        <section id="order-detail" class="detail-card card" th:fragment="order-detail"
+                 th:hx-swap-oob="${oob != null and detail != null} ? 'true'"
+                 th:with="statusBadge=${ {'PENDING':'badge-amber','IN_PROGRESS':'badge-purple','COMPLETED':'badge-green','DELIVERED':'badge-gray','CANCELLED':'badge-red'} }"
+                 aria-labelledby="detail-title">
+
+            <p class="detail-empty" th:if="${detail == null}" hidden th:hidden="${false}">
+                Selecciona una orden de la tabla para ver su detalle.
+            </p>
+
+            <th:block th:if="${detail != null}">
+                <div class="detail-header">
+                    <div class="detail-title">
+                        <h2 id="detail-title" th:text="|Orden #${#numbers.formatInteger(detail.id, 4)}|">Orden #0248</h2>
+                        <div class="plate-badge inline-badge plate-COLOR_YELLOW"
+                             th:class="|plate-badge inline-badge plate-${detail.vehicle.plateColor}|"
+                             th:text="${detail.vehicle.licensePlate}">KTR-482</div>
+                        <span class="badge badge-purple"
+                              th:class="|badge ${statusBadge[detail.status.name()]}|"
+                              th:text="${detail.status.label}">En progreso</span>
+                    </div>
+                    <!-- RF-16: mapa del servicio externo (panel.js, sin otra petición) -->
+                    <button type="button" class="btn btn-outline btn-sm"
+                            th:if="${detail.latitude != null}"
+                            data-lat="4.65332" data-lng="-74.08361"
+                            th:data-lat="${detail.latitude}" th:data-lng="${detail.longitude}"
+                            onclick="showDetailMap(this)">
+                        <i data-lucide="map-pin"></i> Ver ubicación en el mapa
+                    </button>
+                </div>
+
+                <div class="detail-grid">
+                    <div>
+                        <span class="detail-label">VEHÍCULO</span>
+                        <strong th:text="|${detail.vehicle.carModel.brand} ${detail.vehicle.carModel.name}|">Renault Duster</strong>
+                        <p th:text="${detail.vehicle.plateColor.label}">Amarilla (particular)</p>
+                    </div>
+                    <div>
+                        <span class="detail-label">MOTIVO DE INGRESO</span>
+                        <strong th:text="${detail.reason}">Frenos y mantenimiento preventivo</strong>
+                        <p th:text="|Ingreso ${#temporals.format(detail.repairDate, 'dd/MM/yyyy HH:mm')}|">Ingreso 23/10/2026 09:30</p>
+                    </div>
+                    <div>
+                        <span class="detail-label">UBICACIÓN DEL SERVICIO</span>
+                        <strong th:text="${detail.serviceType.label}">A domicilio</strong>
+                        <p th:if="${detail.latitude != null}"
+                           th:text="|Lat ${detail.latitude} · Lng ${detail.longitude}|">Lat 4.65332 · Lng -74.08361</p>
+                    </div>
+                </div>
+
+                <!-- Leaflet dibuja aquí el punto del servicio externo -->
+                <div id="detail-map"></div>
+
+                <!-- ============ REPUESTOS (RF-19) ============ -->
+                <div class="parts-block">
+                    <span class="detail-label">REPUESTOS USADOS</span>
+
+                    <ul class="parts-list" th:if="${!#maps.isEmpty(detail.usedParts)}">
+                        <li class="part-chip" th:each="p : ${detail.usedParts}">
+                            <span th:text="|${p.key.name} x${p.value}|">Pastillas de freno x1</span>
+                            <!-- Quitar: el modal de confirmación de panel.js lo pregunta antes -->
+                            <button type="button" th:if="${detail.status.name() == 'IN_PROGRESS'}"
+                                    aria-label="Quitar" th:aria-label="|Quitar ${p.key.name}|"
+                                    hx-delete="/repairs/assigned/1/parts/1"
+                                    th:hx-delete="@{/repairs/assigned/{id}/parts/{partId}(id=${detail.id}, partId=${p.key.id})}"
+                                    hx-swap="none"
+                                    hx-confirm="¿Quitar este repuesto? La cantidad vuelve al stock."
+                                    th:hx-confirm="|¿Quitar ${p.key.name}? La cantidad vuelve al stock.|">
+                                <i data-lucide="x"></i>
+                            </button>
+                        </li>
+                        <li class="part-chip" th:remove="all">
+                            <span>Disco de freno x2</span>
+                            <button type="button" aria-label="Quitar"><i data-lucide="x"></i></button>
+                        </li>
+                    </ul>
+                    <p class="form-hint" th:if="${#maps.isEmpty(detail.usedParts)}" hidden th:hidden="${false}">
+                        Aún no se han registrado repuestos en esta orden.
+                    </p>
+
+                    <!-- RF-12 / RF-19: repuestos compatibles con el modelo del vehículo, con precio y stock.
+                         Se ven aquí mismo (sin ir al inventario del administrador) y salen de "compatibleParts",
+                         el mismo dato del selector de abajo: no hace falta otra petición.
+                         <details> abre y cierra la lista sin JavaScript. -->
+                    <details class="compat-parts">
+                        <summary>
+                            <i data-lucide="package-search"></i>
+                            <span th:text="|Repuestos compatibles con ${detail.vehicle.carModel.brand} ${detail.vehicle.carModel.name}|">Repuestos compatibles con Renault Duster</span>
+                            <span class="badge badge-gray" th:text="${#lists.size(compatibleParts)}">3</span>
+                            <i data-lucide="chevron-down" class="compat-chevron"></i>
+                        </summary>
+
+                        <p class="form-hint" th:if="${#lists.isEmpty(compatibleParts)}" hidden th:hidden="${false}">
+                            No hay repuestos registrados para este modelo.
+                        </p>
+
+                        <ul class="compat-list" th:unless="${#lists.isEmpty(compatibleParts)}">
+                            <li th:each="sp : ${compatibleParts}" th:classappend="${sp.stock == 0} ? 'is-empty'">
+                                <div>
+                                    <strong th:text="${sp.name}">Pastillas de freno delanteras</strong>
+                                    <small class="part-code" th:text="${sp.eanCode}">7701234000028</small>
+                                </div>
+                                <span class="part-price"
+                                      th:text="|$ ${#numbers.formatDecimal(sp.price, 1, 'POINT', 2, 'COMMA')}|">$ 120.000,00</span>
+                                <span class="badge badge-green"
+                                      th:class="${sp.stock == 0} ? 'badge badge-red' : 'badge badge-green'"
+                                      th:text="${sp.stock == 0} ? 'Agotado' : |${sp.stock} en stock|">12 en stock</span>
+                            </li>
+                            <li th:remove="all">
+                                <div><strong>Disco de freno</strong><small class="part-code">7701234000080</small></div>
+                                <span class="part-price">$ 160.000,00</span>
+                                <span class="badge badge-green">10 en stock</span>
+                            </li>
+                            <li class="is-empty" th:remove="all">
+                                <div><strong>Bomba de agua</strong><small class="part-code">7701234000097</small></div>
+                                <span class="part-price">$ 175.000,00</span>
+                                <span class="badge badge-red">Agotado</span>
+                            </li>
+                        </ul>
+                    </details>
+
+                    <!-- Registrar repuesto: solo en proceso y solo los compatibles con el modelo.
+                         Los que no tienen stock aparecen deshabilitados (verificación de disponibilidad). -->
+                    <form class="add-part-form" th:if="${detail.status.name() == 'IN_PROGRESS'}"
+                          hx-post="/repairs/assigned/1/parts"
+                          th:hx-post="@{/repairs/assigned/{id}/parts(id=${detail.id})}"
+                          hx-swap="none">
+                        <div class="field">
+                            <label for="sparePartId">Repuesto compatible</label>
+                            <select id="sparePartId" name="sparePartId" required>
+                                <option value=""
+                                        th:text="${#lists.isEmpty(compatibleParts)} ? 'No hay repuestos compatibles con este modelo' : 'Seleccione…'">Seleccione…</option>
+                                <option th:each="sp : ${compatibleParts}"
+                                        value="1" th:value="${sp.id}"
+                                        th:disabled="${sp.stock == 0}"
+                                        th:text="|${sp.name} · stock ${sp.stock}${sp.stock == 0 ? ' (agotado)' : ''}|">Pastillas de freno delanteras · stock 12</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="quantity">Cantidad</label>
+                            <input id="quantity" type="number" name="quantity" min="1" step="1" value="1" required>
+                        </div>
+                        <button type="submit" class="btn btn-outline">
+                            <i data-lucide="plus"></i> Agregar repuesto
+                        </button>
+                    </form>
+                </div>
+
+                <!-- ============ ESTADO DEL SERVICIO (RF-17) ============
+                     Pendiente -> En proceso -> Terminado. Cancelar lo hace solo el operador.
+                     Cada acción responde con repairs/assigned-response (tabla, resumen, detalle y toast). -->
+                <div class="detail-actions">
+                    <button type="button" class="btn btn-primary btn-sm"
+                            th:if="${detail.status.name() == 'PENDING'}"
+                            hx-post="/repairs/assigned/1/start"
+                            th:hx-post="@{/repairs/assigned/{id}/start(id=${detail.id})}"
+                            hx-swap="none">
+                        <i data-lucide="play"></i> Iniciar reparación
+                    </button>
+                    <button type="button" class="btn btn-primary btn-sm"
+                            th:if="${detail.status.name() == 'IN_PROGRESS'}"
+                            hx-post="/repairs/assigned/1/complete"
+                            th:hx-post="@{/repairs/assigned/{id}/complete(id=${detail.id})}"
+                            hx-swap="none"
+                            hx-confirm="¿Marcar la reparación como terminada? Ya no podrás agregar repuestos.">
+                        <i data-lucide="check-circle"></i> Terminar reparación
+                    </button>
+                </div>
+            </th:block>
+        </section>
+
+    </main>
+</div>
 
 </body>
 </html>

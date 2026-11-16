@@ -23,9 +23,13 @@ public class RepairStatusController {
         return "public/repair-status";
     }
 
-    //Fragmento: resultados de la búsqueda
+    //Fragmento: resultados de la búsqueda.
+    //El formulario también envía plateColor, pero se ignora: la placa ya es única,
+    //y filtrar por color daría "no encontrado" si el cliente escoge mal el color.
     @GetMapping("/search")
     public String searchRepairs(@RequestParam(required = false) String licensePlate, Model model){
+        //Placa escrita, para el mensaje "No encontramos reparaciones para la placa ..."
+        model.addAttribute("licensePlate", licensePlate == null ? "" : licensePlate.trim().toUpperCase());
         try {
             model.addAttribute("repairs", repairService.findRepairsByLicensePlate(licensePlate));
         } catch (IllegalArgumentException e) {

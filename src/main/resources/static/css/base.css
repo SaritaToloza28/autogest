@@ -1,4 +1,5 @@
 /* ==========================================================
+TODO: revisar todo
 
    Autogest · Design System Global & Componentes Reutilizables
    ========================================================== */
@@ -287,7 +288,7 @@ button.help-link {
 /* Mapa del servicio externo en el detalle (se llena con HTMX) */
 #detail-map:empty { display: none; }
 #detail-map {
-    height: clamp(320px, 55vh, 480px);
+    height: 280px;
     margin: 0 1.5rem 1.5rem;
     border: 1px solid var(--edge);
     border-radius: 12px;
@@ -432,9 +433,8 @@ body:has(.modal-overlay[open]) { overflow: hidden; }
     animation: fade-in .2s ease-out;
 }
 
-/* Alto según la pantalla: entre 260 y 360 px */
 #modal-map {
-    height: clamp(260px, 42vh, 360px);
+    height: 180px;
     width: 100%;
     border: 1px solid rgba(128, 52, 210, .2);
     border-radius: 12px;
@@ -569,16 +569,81 @@ body:has(.modal-overlay[open]) { overflow: hidden; }
     filter: brightness(1.08);
     box-shadow: 0 6px 20px rgba(128, 52, 210, 0.45);
 }
+/* El saludo del encabezado (.welcome, .welcome-msg) está en panel.css */
 /* =========================================================
-   MENSAJE DE BIENVENIDA EN EL HEADER SUPERIOR
-   Reutiliza las variables de variables.css (--ink-soft y --neon)
+   ENGRANAJES EN LAS TARJETAS
+   La misma figura del sidebar (images/gear.svg), muy tenue, asomándose por
+   una esquina libre de cada tarjeta. Va en un ::before detrás del contenido,
+   así que no hace falta tocar el HTML de cada página. Se recorta con el propio
+   pseudo-elemento (no con overflow: hidden) para que las listas flotantes,
+   como el buscador de modelos, no se corten.
+
+   Dónde va en cada tarjeta (siempre lejos de botones y campos):
+   · Formularios y modales  -> abajo a la izquierda (los botones van a la derecha)
+   · Detalle de una orden    -> a la derecha de la cuadrícula de datos (.detail-grid)
+   · KPIs                    -> centrado detrás del número (igual en las 4 tarjetas)
+   · Vacías, portal público y vista de referencia de repuestos -> abajo a la derecha
    ========================================================= */
-.welcome-msg {
-    font-size: 0.95rem;
-    color: var(--ink-soft); /* Reutiliza el tono suave #6E5799 */
+:is(.form-card, .modal-card, .detail-grid, .empty-card, .public-card, .part-detail, .status-card) {
+    position: relative;
+    isolation: isolate;
 }
 
-.welcome-msg strong {
-    color: var(--neon); /* Reutiliza el neón morado principal #8034D2 */
-    font-weight: 600;
+:is(.form-card, .modal-card, .detail-grid, .empty-card, .public-card, .part-detail, .status-card)::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: .12;
+    background-image: url("../images/gear.svg"), url("../images/gear.svg");
+    background-repeat: no-repeat;
+}
+
+/* Engranaje grande en la esquina y uno pequeño a su lado, como en el sidebar */
+:is(.form-card, .modal-card)::before {
+    background-size: 130px, 56px;
+    background-position: left -44px bottom -62px, left 74px bottom -26px;
+}
+.modal-card::before { opacity: .09; }
+
+.detail-grid::before {
+    opacity: .1;
+    background-size: 150px, 64px;
+    background-position: right -40px center, right 96px bottom -30px;
+}
+
+.empty-card::before,
+.public-card::before,
+.part-detail::before,
+.status-card::before {
+    background-size: 120px, 52px;
+    background-position: right -38px bottom -54px, right 70px bottom -24px;
+}
+.public-card::before { background-size: 170px, 72px; background-position: right -56px bottom -80px, right 98px bottom -34px; }
+
+/* KPI: el engranaje se ancla al número y no al borde de la tarjeta.
+   Así queda en el mismo lugar respecto a la cifra en todas las tarjetas,
+   sin importar si el número tiene uno o dos dígitos. */
+.kpi-value {
+    position: relative;
+    isolation: isolate;
+    display: inline-grid;
+    place-items: center;
+    min-width: 1.6em;                 /* "5" y "24" ocupan el mismo ancho */
+    text-align: center;
+}
+.kpi-value::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: -1;
+    width: 58px;
+    height: 58px;
+    transform: translate(-50%, -50%);
+    background: url("../images/gear.svg") center / contain no-repeat;
+    opacity: .14;
+    pointer-events: none;
 }

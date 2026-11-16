@@ -17,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -81,9 +80,10 @@ public class RepairService {
                 .map(repair -> new RepairStatusDTO(
                         repair.getRepairDate(),
                         repair.getVehicle().getLicensePlate(),
+                        repair.getVehicle().getPlateColor(),
                         repair.getVehicle().getCarModel().getDisplayName(),
                         repair.getReason(),
-                        repair.getStatus().getLabel()))
+                        repair.getStatus()))
                 .toList();
     }
 
@@ -96,19 +96,15 @@ public class RepairService {
         return this.repository.existsByVehicleIdAndStatusIn(vehicleId, openStatuses);
     }
 
-    //Vista del mecánico: para cada reparación en progreso, los repuestos compatibles con su vehículo
-    public Map<Long, List<SparePart>> findCompatiblePartsForInProgress(List<Repair> repairs){
-        Map<Long, List<SparePart>> compatibleParts = new HashMap<>();
+    //Vista del mecánico: repuestos compatibles con el modelo del vehículo de la orden abierta en el detalle
+    public List<SparePart> findCompatibleParts(Repair repair){
+        Long carModelId = repair.getVehicle().getCarModel().getId();
+        return this.sparePartRepository.findByCompatibleModelsIdOrderByNameAsc(carModelId);
+    }
 
-        for (Repair repair : repairs){
-            if (repair.getStatus() == RepairStatus.IN_PROGRESS){
-                Long carModelId = repair.getVehicle().getCarModel().getId();
-                compatibleParts.put(repair.getId(),
-                        this.sparePartRepository.findByCompatibleModelsIdOrderByNameAsc(carModelId));
-            }
-        }
-
-        return compatibleParts;
+    //Vista del mecánico: una orden, solo si está asignada a él
+    public Repair findAssignedRepairById(Long repairId, String username) throws EntityNotFoundException, IllegalArgumentException {
+        return findAssignedRepair(repairId, username);
     }
 
     // ---------- Registro (operador) ----------

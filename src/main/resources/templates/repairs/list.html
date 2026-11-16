@@ -1,27 +1,25 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<head>
+<head th:replace="~{fragments/head :: head('Órdenes de servicio', 'panel')}">
+    <!-- Solo para la vista previa sin Spring (ver fragments/head.html) -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="../../static/images/logo-taller.png">
     <title>Órdenes de servicio | Autogest</title>
-
-    <!-- Fuentes del login (Chakra Petch + IBM Plex Sans) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
-
-    <!-- base.css (compartido) + panel.css (diseño del panel) + Leaflet (mapas) -->
-    <link rel="stylesheet" href="../../static/css/base.css" th:href="@{/css/base.css}">
-    <link rel="stylesheet" href="../../static/css/panel.css" th:href="@{/css/panel.css}">
-    <link rel="stylesheet" href="../../static/css/leaflet.css" th:href="@{/css/leaflet.css}">
+    <link rel="stylesheet" href="../../static/css/base.css">
+    <link rel="stylesheet" href="../../static/css/panel.css">
+    <link rel="stylesheet" href="../../static/css/leaflet.css">
+    <script defer src="../../static/js/htmx.min.js"></script>
+    <script defer src="../../static/js/lucide.min.js"></script>
+    <script defer src="../../static/js/leaflet.js"></script>
+    <script defer src="../../static/js/panel.js"></script>
 </head>
 
-<!-- Token CSRF para todas las peticiones HTMX -->
-<body class="dashboard-body preview-operator"
-      hx-headers='{"X-CSRF-TOKEN": "estatico"}'
-      th:hx-headers="|{&quot;${_csrf.headerName}&quot;: &quot;${_csrf.token}&quot;}|">
+<body class="dashboard-body preview-operator">
 
 <!-- Notificaciones (fragments/toast.html las agrega aquí) -->
 <div id="toast-container" role="status" aria-live="polite"></div>
@@ -39,14 +37,25 @@
     <main id="main-content" class="main-content">
 
         <header class="top-header">
-            <span class="welcome-msg">
-                ¡Bienvenid@, <strong sec:authentication="name">operador1</strong>!
-            </span>
+            <!-- Saludo según la hora: Spring lo reemplaza por fragments/header :: welcome -->
+            <div class="welcome"
+                 th:replace="~{fragments/header :: welcome}"
+                 hx-get="../fragments/header.html"
+                 hx-select=".welcome"
+                 hx-trigger="load"
+                 hx-swap="outerHTML"></div>
             <div class="header-right">
-                <!-- Abre el modal: GET /repairs/form -> repairs/create :: modal -->
+                <!-- Rol de la sesión: fragments/header :: role -->
+                <span class="role-badge"
+                      th:replace="~{fragments/header :: role}"
+                      hx-get="../fragments/header.html"
+                      hx-select=".role-badge"
+                      hx-trigger="load"
+                      hx-swap="outerHTML"></span>
+                <!-- Abre el modal: GET /repairs/form -> repairs/form :: modal -->
                 <button type="button"
                         class="btn btn-primary btn-submit"
-                        hx-get="create.html"
+                        hx-get="form.html"
                         th:hx-get="@{/repairs/form}"
                         hx-target="#modal-container"
                         hx-swap="innerHTML">
@@ -57,9 +66,9 @@
 
         <section class="page-title-section">
             <div>
-                <span class="subtitle">RECEPCIÓN Y SEGUIMIENTO</span>
+                <span class="subtitle">TALLER · OPERADOR</span>
                 <h1>Órdenes de servicio</h1>
-                <p>Recibe vehículos, asigna responsables y mantén a tus clientes al día.</p>
+                <p class="subtitle">Recibe vehículos, asigna responsables y mantén a tus clientes al día.</p>
             </div>
         </section>
 
@@ -226,6 +235,19 @@
                     </div>
                 </div>
 
+                <!-- Repuestos usados (solo lectura; el mecánico los registra desde su vista) -->
+                <div class="parts-block">
+                    <span class="detail-label">REPUESTOS USADOS</span>
+                    <ul class="parts-list" th:if="${!#maps.isEmpty(detail.usedParts)}">
+                        <li class="part-chip" th:each="p : ${detail.usedParts}">
+                            <span th:text="|${p.key.name} x${p.value}|">Pastillas de freno x1</span>
+                        </li>
+                    </ul>
+                    <p class="form-hint" th:if="${#maps.isEmpty(detail.usedParts)}">
+                        Aún no se han registrado repuestos en esta orden.
+                    </p>
+                </div>
+
                 <!-- Acciones según el estado (RepairStatus.canChangeTo lo valida en el back) -->
                 <div class="detail-actions">
                     <button type="button" class="btn btn-outline btn-sm"
@@ -266,12 +288,8 @@
     </main>
 </div>
 
-<!-- HTMX inserta aquí el modal (repairs/create :: modal) -->
+<!-- HTMX inserta aquí el modal (repairs/form :: modal) -->
 <div id="modal-container"></div>
 
-<script src="../../static/js/htmx.min.js" th:src="@{/js/htmx.min.js}"></script>
-<script src="../../static/js/lucide.min.js" th:src="@{/js/lucide.min.js}"></script>
-<script src="../../static/js/leaflet.js" th:src="@{/js/leaflet.js}"></script>
-<script src="../../static/js/panel.js" th:src="@{/js/panel.js}"></script>
 </body>
 </html>

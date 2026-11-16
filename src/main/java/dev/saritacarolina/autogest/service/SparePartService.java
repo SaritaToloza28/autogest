@@ -35,6 +35,12 @@ public class SparePartService {
         return this.repository.findAllByOrderByNameAsc();
     }
 
+    //Filtro del inventario (todos los parámetros son opcionales)
+    public List<SparePart> searchSpareParts(String text, Long carModelId, boolean inStock){
+        String cleanText = text == null ? "" : text.trim();
+        return this.repository.search(cleanText, carModelId, inStock);
+    }
+
     public SparePart findSparePartById(Long sparePartId) throws EntityNotFoundException {
         return this.repository.findWithCompatibleModelsById(sparePartId)
                 .orElseThrow(() -> new EntityNotFoundException("Repuesto con id " + sparePartId + " no encontrado"));

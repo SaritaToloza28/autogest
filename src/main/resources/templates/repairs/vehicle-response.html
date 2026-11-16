@@ -1,8 +1,6 @@
-
 <!-- Respuesta de /repairs/vehicle-lookup, POST /repairs/vehicle y PUT /repairs/vehicle/{id}:
      la sección del vehículo (reemplaza #vehicle-section) y, si hay mensaje, un toast -->
-<fieldset th:replace="~{repairs/create :: vehicle-section}"></fieldset>
+<fieldset th:replace="~{repairs/form :: vehicle-section}"></fieldset>
 
-<th:block th:if="${toastMessage != null}">
-    <div th:replace="~{fragments/toast :: toast}"></div>
-</th:block>
+<!-- El fragmento del aviso ya no pinta nada si no hay toastMessage -->
+<div th:replace="~{fragments/toast :: toast}"></div>
