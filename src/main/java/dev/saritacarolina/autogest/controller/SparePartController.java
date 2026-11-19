@@ -12,7 +12,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.UncheckedIOException;
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 //Inventario de repuestos (administrador): tabla + KPIs + vista de referencia; el formulario es un modal
@@ -132,6 +135,79 @@ public class SparePartController {
             addFormData(model, sparePartRequest, sparePartId);
             return toast(model, "error", e.getMessage());
         }
+    }
+
+    // ---------- Tabla editable ----------
+
+    //Fragmento: fila en modo lectura (botón "Cancelar" de la fila)
+    @GetMapping("/{id}/row")
+    public String getRow(@PathVariable("id") Long sparePartId, HttpServletResponse response, Model model){
+        return rowFragment(sparePartId, "spare-parts/list :: row", response, model);
+    }
+
+    //Fragmento: fila en modo edición (lápiz o doble clic en una celda)
+    @GetMapping("/{id}/row/edit")
+    public String getRowEdit(@PathVariable("id") Long sparePartId, HttpServletResponse response, Model model){
+        return rowFragment(sparePartId, "spare-parts/list :: row-edit", response, model);
+    }
+
+    //Guardar la fila (POST multipart por la imagen). La fila no trae descripción ni modelos
+    //compatibles: se conservan los que ya tiene el repuesto.
+    @PostMapping("/{id}/row")
+    public String updateRow(@PathVariable("id") Long sparePartId,
+                            @RequestParam(required = false) String eanCode,
+                            @RequestParam(required = false) String name,
+                            @RequestParam(required = false) BigDecimal price,
+                            @RequestParam(required = false) Integer stock,
+                            @RequestParam(value = "image", required = false) MultipartFile image,
+                            HttpServletResponse response,
+                            Model model){
+        SparePartDTO current;
+        try {
+            current = service.toDTO(service.findSparePartById(sparePartId));
+        } catch (EntityNotFoundException e) {
+            response.setHeader("HX-Reswap", "none");
+            return toast(model, "error", e.getMessage());
+        }
+
+        SparePartDTO request = new SparePartDTO(name, current.description(), price, eanCode, stock,
+                current.imagePath(), current.compatibleModelIds());
+        try {
+            SparePartDTO updated = service.updateSparePart(sparePartId, request, image);
+
+            model.addAttribute("p", service.findSparePartById(sparePartId));
+            model.addAttribute("spareParts", service.findAllSpareParts());
+            return rowToast(model, "success", "Repuesto " + updated.name() + " actualizado");
+        } catch (IllegalArgumentException | UncheckedIOException e) {
+            //La fila sigue en edición con lo que se escribió (la imagen sigue siendo la guardada)
+            Map<String, Object> typed = new HashMap<>();
+            typed.put("id", sparePartId);
+            typed.put("eanCode", eanCode);
+            typed.put("name", name);
+            typed.put("price", price);
+            typed.put("stock", stock);
+            typed.put("imagePath", current.imagePath());
+            model.addAttribute("p", typed);
+            model.addAttribute("editing", true);
+            return rowToast(model, "error", e.getMessage());
+        }
+    }
+
+    private String rowFragment(Long sparePartId, String fragment, HttpServletResponse response, Model model){
+        try {
+            model.addAttribute("p", service.findSparePartById(sparePartId));
+            return fragment;
+        } catch (EntityNotFoundException e) {
+            //No reemplaza la fila, solo muestra el aviso
+            response.setHeader("HX-Reswap", "none");
+            return toast(model, "error", e.getMessage());
+        }
+    }
+
+    private String rowToast(Model model, String type, String message){
+        model.addAttribute("toastType", type);
+        model.addAttribute("toastMessage", message);
+        return "spare-parts/row-response";
     }
 
     @DeleteMapping("/{id}")

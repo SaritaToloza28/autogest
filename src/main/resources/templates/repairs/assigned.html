@@ -244,8 +244,11 @@
                     <!-- RF-12 / RF-19: repuestos compatibles con el modelo del vehículo, con precio y stock.
                          Se ven aquí mismo (sin ir al inventario del administrador) y salen de "compatibleParts",
                          el mismo dato del selector de abajo: no hace falta otra petición.
-                         <details> abre y cierra la lista sin JavaScript. -->
-                    <details class="compat-parts">
+                         <details> abre y cierra la lista sin JavaScript.
+                         Solo mientras la orden sigue abierta: terminada, entregada o cancelada ya no se
+                         registran repuestos, así que solo se ven los usados (lista de arriba). -->
+                    <details class="compat-parts"
+                             th:if="${detail.status.name() == 'PENDING' or detail.status.name() == 'IN_PROGRESS'}">
                         <summary>
                             <i data-lucide="package-search"></i>
                             <span th:text="|Repuestos compatibles con ${detail.vehicle.carModel.brand} ${detail.vehicle.carModel.name}|">Repuestos compatibles con Renault Duster</span>

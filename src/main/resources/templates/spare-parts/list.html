@@ -106,7 +106,7 @@
                      o alerta si no hay / no hay stock). La página necesita "carModels" en el modelo. -->
                 <form class="table-actions parts-filter"
                       hx-get="/spare-parts/search" th:hx-get="@{/spare-parts/search}"
-                      hx-trigger="input delay:350ms, submit"
+                      hx-trigger="input delay:300ms, submit"
                       hx-target="#spare-part-table" hx-swap="outerHTML">
                     <label class="search-box">
                         <i data-lucide="search"></i>
@@ -129,7 +129,7 @@
                         <input type="checkbox" name="inStock" value="true"> Solo con stock
                     </label>
                 </form>
-                <table id="spare-part-table" class="custom-table" th:fragment="table"
+                <table id="spare-part-table" class="custom-table editable-table" th:fragment="table"
                        th:hx-swap-oob="${oob} ? 'true'">
                     <thead>
                     <tr>
@@ -142,16 +142,25 @@
                     </tr>
                     </thead>
 
+                    <!-- Tabla editable: cada fila tiene dos versiones.
+                           · "row"      -> modo lectura (aquí y sola como "spare-parts/list :: row", repuesto en "p").
+                           · "row-edit" -> imagen, código, nombre, precio y stock en campos.
+                         El lápiz o el doble clic en una celda pide "row-edit"; Guardar (Enter) hace POST
+                         multipart (por la imagen) y Cancelar (Esc) vuelve a la fila sin guardar.
+                         La descripción y los modelos compatibles se editan con "Editar repuesto"
+                         en la vista de referencia (el modal completo). -->
                     <tbody>
-                    <tr th:each="p : ${spareParts}"
+                    <th:block th:each="p : ${spareParts}">
+                    <tr th:fragment="row"
                         data-id="1" th:data-id="${p.id}"
+                        title="Clic: ver detalle · Doble clic en una celda: editar"
                         th:classappend="${detail != null and detail.id == p.id} ? 'row-selected'"
                         hx-get="/spare-parts/1/detail"
                         th:hx-get="@{/spare-parts/{id}/detail(id=${p.id})}"
-                        hx-trigger="click[!event.target.closest('.row-actions')]"
+                        hx-trigger="click[!event.target.closest('.row-actions')] delay:300ms"
                         hx-target="#part-detail"
                         hx-swap="outerHTML">
-                        <td>
+                        <td data-field="image">
                             <!-- hidden: en la vista previa no hay imagen; Spring quita el atributo -->
                             <img class="thumb" th:if="${p.imagePath != null}" alt="Imagen del repuesto"
                                  hidden th:hidden="${false}"
@@ -160,10 +169,10 @@
                                 <i data-lucide="image"></i>
                             </span>
                         </td>
-                        <td class="part-code" th:text="${p.eanCode}">7701234000011</td>
-                        <td class="part-name" th:text="${p.name}">Filtro de aceite</td>
-                        <td class="part-price" th:text="|$ ${#numbers.formatDecimal(p.price, 1, 'POINT', 2, 'COMMA')}|">$ 25.000,00</td>
-                        <td>
+                        <td class="part-code" data-field="eanCode" th:text="${p.eanCode}">7701234000011</td>
+                        <td class="part-name" data-field="name" th:text="${p.name}">Filtro de aceite</td>
+                        <td class="part-price" data-field="price" th:text="|$ ${#numbers.formatDecimal(p.price, 1, 'POINT', 2, 'COMMA')}|">$ 25.000,00</td>
+                        <td data-field="stock">
                             <span class="badge badge-green"
                                   th:class="${p.stock == 0} ? 'badge badge-red' : 'badge badge-green'"
                                   th:text="${p.stock}">30</span>
@@ -171,11 +180,12 @@
                         <td>
                             <div class="row-actions">
                                 <button type="button" class="btn btn-outline btn-sm btn-icon"
-                                        title="Editar" aria-label="Editar"
-                                        hx-get="/spare-parts/1/edit"
-                                        th:hx-get="@{/spare-parts/{id}/edit(id=${p.id})}"
-                                        hx-target="#modal-container"
-                                        hx-swap="innerHTML">
+                                        title="Editar en la tabla" aria-label="Editar en la tabla"
+                                        data-row-edit
+                                        hx-get="/spare-parts/1/row/edit"
+                                        th:hx-get="@{/spare-parts/{id}/row/edit(id=${p.id})}"
+                                        hx-target="closest tr"
+                                        hx-swap="outerHTML">
                                     <i data-lucide="pencil"></i>
                                 </button>
                                 <button type="button" class="btn btn-danger-soft btn-sm btn-icon"
@@ -190,6 +200,78 @@
                             </div>
                         </td>
                     </tr>
+                    </th:block>
+
+                    <!-- Fila en modo edición: Spring nunca la pinta aquí (th:if false) -->
+                    <th:block th:if="${false}">
+                        <tr th:fragment="row-edit" class="is-editing row-selected"
+                            data-id="2" th:data-id="${p.id}">
+                            <td>
+                                <!-- Clic en la miniatura abre el selector de archivos (vacío = conservar la imagen) -->
+                                <label class="cell-image" title="Cambiar imagen (JPG, PNG o WEBP, máx. 2 MB)">
+                                    <img class="thumb" th:if="${p.imagePath != null}" alt="Imagen del repuesto"
+                                         hidden th:hidden="${false}"
+                                         th:src="@{${p.imagePath}}">
+                                    <span class="thumb thumb-empty" th:if="${p.imagePath == null}">
+                                        <i data-lucide="image"></i>
+                                    </span>
+                                    <span class="cell-image-overlay" aria-hidden="true"><i data-lucide="camera"></i></span>
+                                    <input class="sr-only" type="file" name="image" data-image-preview
+                                           accept="image/jpeg,image/png,image/webp"
+                                           aria-label="Cambiar imagen del repuesto">
+                                </label>
+                            </td>
+                            <td>
+                                <input class="cell-input cell-code" type="text" name="eanCode" inputmode="numeric"
+                                       minlength="13" maxlength="13" pattern="\d{13}" required
+                                       aria-label="Código EAN-13" title="13 dígitos"
+                                       value="7701234000028" th:value="${p.eanCode}">
+                            </td>
+                            <td>
+                                <input class="cell-input" type="text" name="name" maxlength="100" required
+                                       aria-label="Nombre del repuesto"
+                                       value="Pastillas de freno delanteras" th:value="${p.name}">
+                            </td>
+                            <td>
+                                <label class="cell-input cell-money">
+                                    <span aria-hidden="true">$</span>
+                                    <input type="number" name="price" min="0.01" step="0.01" required
+                                           aria-label="Precio"
+                                           value="125000" th:value="${p.price}">
+                                </label>
+                            </td>
+                            <td>
+                                <input class="cell-input cell-stock" type="number" name="stock" min="0" step="1" required
+                                       aria-label="Stock"
+                                       value="18" th:value="${p.stock}">
+                            </td>
+                            <td>
+                                <div class="row-actions">
+                                    <button type="button" class="btn btn-success btn-sm"
+                                            title="Guardar (Enter)"
+                                            data-row-save
+                                            hx-post="/spare-parts/2/row"
+                                            th:hx-post="@{/spare-parts/{id}/row(id=${p.id})}"
+                                            hx-encoding="multipart/form-data"
+                                            hx-include="closest tr"
+                                            hx-validate="true"
+                                            hx-target="closest tr"
+                                            hx-swap="outerHTML">
+                                        <i data-lucide="check"></i> Guardar
+                                    </button>
+                                    <button type="button" class="btn btn-outline btn-sm"
+                                            title="Cancelar (Esc)"
+                                            data-row-cancel
+                                            hx-get="/spare-parts/2/row"
+                                            th:hx-get="@{/spare-parts/{id}/row(id=${p.id})}"
+                                            hx-target="closest tr"
+                                            hx-swap="outerHTML">
+                                        Cancelar
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </th:block>
 
                     <!-- Filas de ejemplo: solo en la vista estática, Spring las elimina -->
                     <tr th:remove="all">
@@ -224,6 +306,12 @@
                     </tr>
                     </tbody>
                 </table>
+
+                <!-- Pista: el CSS la muestra solo mientras hay una fila en edición -->
+                <p class="edit-hint" aria-live="polite">
+                    <i data-lucide="info"></i>
+                    Pulsa <kbd>Enter</kbd> para guardar o <kbd>Esc</kbd> para cancelar.
+                </p>
             </section>
 
             <!-- ================ VISTA DE REFERENCIA (derecha) ================

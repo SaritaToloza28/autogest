@@ -1,0 +1,13 @@
+<!-- Respuesta de PUT /car-models/{id}/row (guardar una fila de la tabla editable).
+     El cuerpo principal reemplaza la fila (hx-target="closest tr", outerHTML); el aviso llega con hx-swap-oob.
+     · Guardado bien -> "m" = modelo actualizado: fila en modo lectura.
+     · Con errores   -> "m" = lo que se escribió y "editing" = true: la fila sigue en edición. -->
+
+<th:block th:if="${editing == null}">
+    <tr th:replace="~{car-models/list :: row}"></tr>
+</th:block>
+<th:block th:if="${editing != null}">
+    <tr th:replace="~{car-models/list :: row-edit}"></tr>
+</th:block>
+
+<div th:replace="~{fragments/toast :: toast}"></div>

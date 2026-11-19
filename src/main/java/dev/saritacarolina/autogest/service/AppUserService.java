@@ -1,45 +1,69 @@
 package dev.saritacarolina.autogest.service;
 
-import dev.saritacarolina.autogest.model.constant.Role;
+import dev.saritacarolina.autogest.model.constant.RoleName;
 import dev.saritacarolina.autogest.model.dto.AppUserDTO;
 import dev.saritacarolina.autogest.model.entity.AppUser;
+import dev.saritacarolina.autogest.model.entity.Role;
 import dev.saritacarolina.autogest.repository.AppUserRepository;
 import dev.saritacarolina.autogest.repository.RepairRepository;
+import dev.saritacarolina.autogest.repository.RoleRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+//Además del CRUD, es el UserDetailsService: Spring Security lo llama al iniciar sesión
 @Service
-public class AppUserService {
+public class AppUserService implements UserDetailsService {
 
     private static final int PASSWORD_MIN = 8;
     private static final int PASSWORD_MAX = 72;
 
     private final AppUserRepository repository;
+    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final RepairRepository repairRepository;
 
     public AppUserService(AppUserRepository repository,
+                          RoleRepository roleRepository,
                           PasswordEncoder passwordEncoder,
                           RepairRepository repairRepository) {
         this.repository = repository;
+        this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.repairRepository = repairRepository;
+    }
+
+    //Carga el usuario para el login. Si está inactivo, Spring lo rechaza por isEnabled()
+    @Override
+    @Transactional
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return this.repository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario " + username + " no encontrado"));
     }
 
     public List<AppUser> findAllAppUsers(){
         return this.repository.findAllByOrderByFullNameAsc();
     }
 
+    //Solo los mecánicos activos se pueden asignar a reparaciones
     public List<AppUser> findAllMechanics(){
-        return this.repository.findByRoleOrderByFullNameAsc(Role.MECHANIC);
+        return this.repository.findByRole_NameAndIsActiveTrueOrderByFullNameAsc(RoleName.ROLE_MECHANIC);
     }
 
     public AppUser findAppUserById(Long appUserId) throws EntityNotFoundException {
         return this.repository.findById(appUserId)
                 .orElseThrow(() -> new EntityNotFoundException("Usuario con id " + appUserId + " no encontrado"));
+    }
+
+    public Role findRoleByName(RoleName name) throws EntityNotFoundException {
+        return this.roleRepository.findByName(name)
+                .orElseThrow(() -> new EntityNotFoundException("Rol " + name + " no encontrado"));
     }
 
     public AppUserDTO createAppUser(AppUserDTO appUserRequest) throws IllegalArgumentException {
@@ -58,6 +82,8 @@ public class AppUserService {
 
         setAttributesFromDTO(appUserRequest, appUser, username);
         appUser.setPassword(this.passwordEncoder.encode(appUserRequest.password()));
+        //los usuarios nuevos quedan activos
+        appUser.setActive(true);
 
         this.repository.save(appUser);
 
@@ -77,6 +103,7 @@ public class AppUserService {
         }
 
         boolean isCurrentUser = appUser.getUsername().equals(currentUsername);
+        RoleName currentRole = appUser.getRole().getName();
 
         //el usuario con sesión iniciada no puede cambiarse su username
         if (isCurrentUser && !appUser.getUsername().equals(username)){
@@ -84,12 +111,12 @@ public class AppUserService {
         }
 
         //ni su rol: así siempre queda al menos un administrador
-        if (isCurrentUser && appUser.getRole() != appUserRequest.role()){
+        if (isCurrentUser && currentRole != appUserRequest.role()){
             throw new IllegalArgumentException("No puedes cambiar tu propio rol");
         }
 
         //un mecánico con reparaciones no puede dejar de ser mecánico: sus reparaciones quedarían sin responsable
-        if (appUser.getRole() == Role.MECHANIC && appUserRequest.role() != Role.MECHANIC
+        if (currentRole == RoleName.ROLE_MECHANIC && appUserRequest.role() != RoleName.ROLE_MECHANIC
                 && this.repairRepository.existsByMechanicId(appUserId)){
             throw new IllegalArgumentException("No se puede cambiar el rol: el mecánico tiene reparaciones asignadas");
         }
@@ -106,6 +133,19 @@ public class AppUserService {
         return toDTO(appUser);
     }
 
+    //Activa o desactiva la cuenta sin borrarla (un usuario inactivo no puede iniciar sesión)
+    public AppUser toggleActive(Long appUserId, String currentUsername) throws EntityNotFoundException, IllegalArgumentException {
+        AppUser appUser = findAppUserById(appUserId);
+
+        if (appUser.getUsername().equals(currentUsername)){
+            throw new IllegalArgumentException("No puedes desactivar tu propio usuario");
+        }
+
+        appUser.setActive(!appUser.isActive());
+
+        return this.repository.save(appUser);
+    }
+
     public void deleteAppUser(Long appUserId, String currentUsername) throws EntityNotFoundException, IllegalArgumentException {
         AppUser appUser = findAppUserById(appUserId);
 
@@ -113,9 +153,9 @@ public class AppUserService {
             throw new IllegalArgumentException("No puedes eliminar tu propio usuario");
         }
 
-        //no se puede borrar un mecánico que tiene reparaciones
+        //no se puede borrar un mecánico que tiene reparaciones (sí se puede desactivar)
         if (this.repairRepository.existsByMechanicId(appUserId)){
-            throw new IllegalArgumentException("No se puede eliminar: el mecánico tiene reparaciones asignadas");
+            throw new IllegalArgumentException("No se puede eliminar: el mecánico tiene reparaciones asignadas. Puedes desactivarlo");
         }
 
         this.repository.delete(appUser);
@@ -149,7 +189,7 @@ public class AppUserService {
     public void setAttributesFromDTO(AppUserDTO request, AppUser appUser, String username){
         appUser.setUsername(username);
         appUser.setFullName(request.fullName().trim());
-        appUser.setRole(request.role());
+        appUser.setRole(findRoleByName(request.role()));
     }
 
     //La contraseña nunca sale del servicio
@@ -158,7 +198,7 @@ public class AppUserService {
                 appUser.getUsername(),
                 appUser.getFullName(),
                 null,
-                appUser.getRole()
+                appUser.getRole().getName()
         );
     }
 

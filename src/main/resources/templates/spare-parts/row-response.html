@@ -1,0 +1,19 @@
+<!-- Respuesta de POST /spare-parts/{id}/row (guardar una fila de la tabla editable).
+     Llega como multipart: eanCode, name, price, stock e image (opcional: vacío = conservar la imagen).
+     El cuerpo principal reemplaza la fila (hx-target="closest tr", outerHTML);
+     los KPIs y el aviso llegan con hx-swap-oob.
+     · Guardado bien -> "p" = repuesto actualizado y "spareParts" (para los KPIs): fila en modo lectura.
+     · Con errores   -> "p" = lo que se escribió y "editing" = true: la fila sigue en edición. -->
+
+<th:block th:if="${editing == null}">
+    <tr th:replace="~{spare-parts/list :: row}"></tr>
+</th:block>
+<th:block th:if="${editing != null}">
+    <tr th:replace="~{spare-parts/list :: row-edit}"></tr>
+</th:block>
+
+<th:block th:if="${spareParts != null}" th:with="oob=true">
+    <section th:replace="~{spare-parts/list :: kpis}"></section>
+</th:block>
+
+<div th:replace="~{fragments/toast :: toast}"></div>

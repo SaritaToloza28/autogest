@@ -28,6 +28,7 @@ public interface SparePartRepository extends JpaRepository<SparePart, Long> {
     //Repuestos que le sirven a un modelo
     List<SparePart> findByCompatibleModelsIdOrderByNameAsc(Long carModelId);
 
+    //TODO: revisar
     //Filtro del inventario: texto en el nombre o el EAN ("" = todos), modelo compatible (null = todos)
     //y solo con stock. Los tres filtros se combinan.
     @EntityGraph(attributePaths = "compatibleModels")

@@ -87,9 +87,10 @@ public class VehicleService {
     }
 
     public VehicleDTO updateVehicle(Long vehicleId, VehicleDTO vehicleRequest) throws EntityNotFoundException, IllegalArgumentException {
-        validateRequest(vehicleRequest);
-
+        //primero se busca: si no existe, el error es "no encontrado" y no uno de validación
         Vehicle vehicle = findVehicleById(vehicleId);
+
+        validateRequest(vehicleRequest);
 
         String licensePlate = normalizePlate(vehicleRequest.licensePlate(), vehicleRequest.plateColor());
 
