@@ -8,6 +8,7 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.ModelAndView;
 
 //Atrapa excepciones de toooodo
+//Ayuda a todos los controladores al tiempo
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
