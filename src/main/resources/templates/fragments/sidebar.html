@@ -7,7 +7,7 @@
      Uso en cada página:  th:replace="~{fragments/sidebar :: sidebar('orders')}"
      El parámetro es la opción del menú que queda activa.
      Necesita base.css + panel.css en la página que lo incluye. -->
-<aside class="sidebar" th:fragment="sidebar(active)">
+<aside class="sidebar" id="app-sidebar" th:fragment="sidebar(active)">
 
     <!-- Engranajes decorativos y tenues -->
     <svg class="gears" viewBox="0 0 260 800" preserveAspectRatio="xMidYMid meet"

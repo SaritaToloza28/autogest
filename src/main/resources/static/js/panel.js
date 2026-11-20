@@ -52,13 +52,32 @@ document.addEventListener('keydown', event => {
 
 /* ---------- 3. Recepción del vehículo ---------- */
 document.addEventListener('keydown', event => {
-    if (event.key !== 'Enter' || !event.target.closest('#vehicle-section')) {
+    const section = event.target.closest('#vehicle-section');
+    if (event.key !== 'Enter' || !section) {
+        return;
+    }
+    // Un botón con el foco (ej. "Continuar") se activa con Enter como siempre
+    if (event.target.matches('button')) {
         return;
     }
     // Enter dentro de la sección del vehículo no envía la orden
     event.preventDefault();
-    if (event.target.id === 'plate') {
+
+    // Buscador de modelo: Enter no hace nada (se elige un resultado de la lista)
+    if (event.target.id === 'carModelSearch') {
+        return;
+    }
+    if (event.target.id === 'plate' || event.target.id === 'plateColor') {
         document.getElementById('btn-lookup')?.click();
+        return;
+    }
+    // Propietario / celular: si se editaron, primero "Guardar cambios";
+    // si no, la acción principal de la sección ("Continuar" o "Registrar vehículo")
+    const save = document.getElementById('btn-save-vehicle');
+    if (save && !save.hidden) {
+        save.click();
+    } else {
+        section.querySelector('.section-actions .btn-primary:not([hidden])')?.click();
     }
 });
 
@@ -468,6 +487,43 @@ function closePartDetail() {
         .forEach(row => row.classList.remove('row-selected'));
 }
 
+/* ---------- Sidebar en pantallas angostas ----------
+   El botón ☰ (fragments/header :: welcome) abre y cierra el sidebar.
+   Se cierra con clic fuera, Escape, al elegir una opción o al volver a pantalla ancha. */
+function setSidebarOpen(open) {
+    document.body.classList.toggle('sidebar-open', open);
+    document.querySelectorAll('.sidebar-toggle').forEach(button => {
+        button.setAttribute('aria-expanded', String(open));
+        button.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
+    });
+}
+
+document.addEventListener('click', event => {
+    if (event.target.closest('.sidebar-toggle')) {
+        setSidebarOpen(!document.body.classList.contains('sidebar-open'));
+        return;
+    }
+    if (!document.body.classList.contains('sidebar-open')) {
+        return;
+    }
+    // Clic fuera del sidebar o en un enlace del menú: se cierra
+    if (!event.target.closest('.sidebar') || event.target.closest('.sidebar a')) {
+        setSidebarOpen(false);
+    }
+});
+
+document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && document.body.classList.contains('sidebar-open')) {
+        setSidebarOpen(false);
+    }
+});
+
+window.matchMedia('(min-width: 1025px)').addEventListener('change', event => {
+    if (event.matches) {
+        setSidebarOpen(false);
+    }
+});
+
 /* ---------- Enganche con HTMX ---------- */
 document.addEventListener('DOMContentLoaded', () => {
     drawIcons();
@@ -484,6 +540,15 @@ document.addEventListener('htmx:load', event => {
     if (elt.id === 'vehicle-section' && !elt.querySelector('[name="vehicleId"]')
         && document.querySelector('#form-new-order[hx-post]')) {
         document.getElementById('service-section').hidden = true;
+    }
+
+    // HTMX reemplazó la sección y el cursor quedó en el <body>: se pone donde sigue el flujo,
+    // así Enter funciona de nuevo (placa encontrada -> "Continuar"; búsqueda -> la placa)
+    if (elt.id === 'vehicle-section') {
+        const next = elt.querySelector('#btn-continue:not([hidden])')
+            || elt.querySelector('#plate')
+            || elt.querySelector('#carModelSearch');
+        next?.focus();
     }
 });
 

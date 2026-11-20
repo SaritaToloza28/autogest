@@ -441,8 +441,41 @@ body.public-home:not(.public-consult) .public-card { margin-top: clamp(2rem, 10v
 /* ---------- Pantallas angostas ---------- */
 @media (max-width: 900px) {
     .home-hero { grid-template-columns: 1fr; gap: 2rem; padding-top: 2rem; }
-    .plate-search,
     .plate-examples { max-width: none; }
+
+    /* Placa de tamaño real a la izquierda y el botón a su lado (no a todo el ancho) */
+    .plate-search {
+        max-width: 620px;
+        display: grid;
+        grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+        grid-template-areas:
+            "plate   button"
+            "type    type"
+            "choices choices";
+        column-gap: .9rem;
+        align-items: stretch;
+    }
+    .plate-search .plate-input   { grid-area: plate; }
+    .plate-search .plate-type    { grid-area: type; }
+    .plate-search .plate-choices { grid-area: choices; }
+    .plate-search .btn-submit {
+        grid-area: button;
+        width: auto;
+        margin-top: 0;
+        align-self: center;
+        justify-self: start;
+        padding-inline: 1.25rem;
+        white-space: nowrap;
+    }
+    .plate-input input { font-size: 1.8rem; padding: .45rem .8rem .55rem; }
+}
+/* Celular: no cabe uno al lado del otro; la placa sigue sin estirarse de más */
+@media (max-width: 560px) {
+    .plate-search {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "plate" "type" "choices" "button";
+    }
+    .plate-search .btn-submit { width: 100%; justify-self: stretch; }
 }
 @media (max-width: 480px) {
     .plate-input input { font-size: 1.8rem; }

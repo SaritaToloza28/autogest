@@ -914,8 +914,59 @@ small { color: var(--muted); font-size: 0.78rem; }
     .custom-table { min-width: 850px; }
 }
 
+/* ---------- Sidebar deslizable en pantallas angostas ----------
+   El botón ☰ (.sidebar-toggle, en fragments/header :: welcome) agrega
+   body.sidebar-open; el sidebar entra desde la izquierda sobre el contenido. */
+.sidebar-toggle {
+    display: none;
+    flex-shrink: 0;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--ink);
+    cursor: pointer;
+}
+.sidebar-toggle:hover { background: var(--tint); color: var(--primary-dark); }
+.sidebar-toggle [data-lucide],
+.sidebar-toggle svg { width: 20px; height: 20px; }
+
+@media (max-width: 1024px) {
+    .sidebar-toggle { display: grid; }
+    .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 900;
+        height: 100vh;
+        height: 100dvh;
+        overflow-y: auto;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    body.sidebar-open .sidebar {
+        transform: translateX(0);
+        box-shadow: 8px 0 32px rgba(23, 9, 51, 0.35);
+    }
+    /* Fondo oscuro detrás del sidebar abierto (clic = cerrar, ver panel.js) */
+    body.sidebar-open .app-shell::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        z-index: 899;
+        background: rgba(23, 9, 51, 0.45);
+    }
+    body.sidebar-open { overflow: hidden; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sidebar { transition: none; }
+}
+
 @media (max-width: 800px) {
-    .sidebar { display: none; }
     .main-content { --gutter: 1rem; padding-bottom: 1.5rem; }
     .page-title-section { flex-direction: column; }
     .table-actions { flex-direction: column; align-items: stretch; }
@@ -1558,6 +1609,13 @@ body:has(.welcome[data-daypart="night"]) {
 }
 .filter-check input { width: 16px; height: 16px; accent-color: var(--primary); }
 
+/* Ventana angosta: .table-actions pasa a columna y el "240px" de arriba se volvería
+   la ALTURA del buscador. Aquí cada control ocupa el ancho y solo la altura que necesita. */
+@media (max-width: 800px) {
+    .parts-filter .search-box { flex: 0 0 auto; }
+    .parts-filter .filter-select select { flex: 1; min-width: 0; }
+}
+
 
 /* =========================================================
    TABLAS EDITABLES (.editable-table: repuestos RF-13 y modelos RF-04)
@@ -1679,6 +1737,18 @@ body:has(.welcome[data-daypart="night"]) {
     color: var(--ink);
 }
 
+
+/* =========================================================
+   CATÁLOGO DE MODELOS (car-models/list.html)
+   Solo dos columnas de texto: filas más bajas y acciones pegadas a la derecha.
+   ========================================================= */
+/* No necesita el ancho mínimo de las tablas grandes */
+#car-model-table { min-width: 0; }
+#car-model-table td { padding-top: 0.55rem; padding-bottom: 0.55rem; }
+#car-model-table th:first-child,
+#car-model-table td:first-child { width: 42%; }
+#car-model-table th:last-child,
+#car-model-table td:last-child { width: 1%; white-space: nowrap; }
 
 /* Fila en edición: el ✓ toma el color del botón (no el lavanda de ".custom-table td [data-lucide]") */
 .editable-table tr.is-editing .row-actions .btn [data-lucide],
