@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 @Entity
 @Table(
         name = "car_model",
-        //La combinación marca + modelo no se puede repetir
+        //no se puede repetir la combinacion
         uniqueConstraints = @UniqueConstraint(columnNames = {"brand", "name"})
 )
 public class CarModel {

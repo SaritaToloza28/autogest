@@ -50,9 +50,10 @@ public class ImageStorageService {
         return "/uploads/" + folder + "/" + fileName;
     }
 
-    //Borrar
+    //Borrar: solo fotos subidas desde la app (/uploads/...).
+    //Las fotos de muestra de data.sql (/images/spare-parts/...) nunca se borran.
     public void delete(String relativePath){
-        if (relativePath == null || relativePath.isBlank()){
+        if (relativePath == null || !relativePath.startsWith("/uploads/")){
             return;
         }
 

@@ -6,6 +6,13 @@
       "runtimeExecutable": "cmd",
       "runtimeArgs": ["/c", "C:\\Users\\sarit\\Documents\\2026_2\\Proyecto\\autogest\\gradlew.bat", "bootRun"],
       "port": 8080
+    },
+    {
+      "name": "autogest-8081",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "C:\\Users\\sarit\\Documents\\2026_2\\Proyecto\\autogest\\gradlew.bat", "bootRun", "--args=--server.port=8081"],
+      "port": 8081,
+      "autoPort": false
     }
   ]
 }
