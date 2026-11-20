@@ -131,21 +131,23 @@
                     <td th:text="|${v.carModel.brand} ${v.carModel.name}|">Mazda 3</td>
                     <td>
                         <div class="row-actions">
-                            <button type="button" class="btn btn-outline btn-sm"
+                            <button type="button" class="btn btn-outline btn-sm btn-icon"
+                                    title="Editar" aria-label="Editar"
                                     hx-get="/vehicles/1/edit"
                                     th:hx-get="@{/vehicles/{id}/edit(id=${v.id})}"
                                     hx-target="#modal-container"
                                     hx-swap="innerHTML">
-                                Editar
+                                <i data-lucide="pencil"></i>
                             </button>
 
-                            <button type="button" class="btn btn-danger-soft btn-sm"
+                            <button type="button" class="btn btn-danger-soft btn-sm btn-icon"
+                                    title="Eliminar" aria-label="Eliminar"
                                     hx-delete="/vehicles/1"
                                     th:hx-delete="@{/vehicles/{id}(id=${v.id})}"
                                     hx-swap="none"
                                     hx-confirm="¿Eliminar este vehículo?"
                                     th:hx-confirm="|¿Eliminar el vehículo ${v.licensePlate}?|">
-                                Eliminar
+                                <i data-lucide="trash-2"></i>
                             </button>
                         </div>
                     </td>
@@ -159,8 +161,8 @@
                     <td>3152084417</td>
                     <td>Renault Logan</td>
                     <td><div class="row-actions">
-                        <button type="button" class="btn btn-outline btn-sm">Editar</button>
-                        <button type="button" class="btn btn-danger-soft btn-sm">Eliminar</button>
+                        <button type="button" class="btn btn-outline btn-sm btn-icon" aria-label="Editar"><i data-lucide="pencil"></i></button>
+                        <button type="button" class="btn btn-danger-soft btn-sm btn-icon" aria-label="Eliminar"><i data-lucide="trash-2"></i></button>
                     </div></td>
                 </tr>
                 <tr th:remove="all">
@@ -170,8 +172,8 @@
                     <td>3109876543</td>
                     <td>Toyota Corolla</td>
                     <td><div class="row-actions">
-                        <button type="button" class="btn btn-outline btn-sm">Editar</button>
-                        <button type="button" class="btn btn-danger-soft btn-sm">Eliminar</button>
+                        <button type="button" class="btn btn-outline btn-sm btn-icon" aria-label="Editar"><i data-lucide="pencil"></i></button>
+                        <button type="button" class="btn btn-danger-soft btn-sm btn-icon" aria-label="Eliminar"><i data-lucide="trash-2"></i></button>
                     </div></td>
                 </tr>
 

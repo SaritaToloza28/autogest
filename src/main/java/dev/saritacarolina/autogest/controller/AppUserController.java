@@ -1,6 +1,6 @@
 package dev.saritacarolina.autogest.controller;
 
-import dev.saritacarolina.autogest.model.constant.Role;
+import dev.saritacarolina.autogest.model.constant.RoleName;
 import dev.saritacarolina.autogest.model.dto.AppUserDTO;
 import dev.saritacarolina.autogest.service.AppUserService;
 import jakarta.persistence.EntityNotFoundException;
@@ -25,20 +25,20 @@ public class AppUserController {
     public String list(Model model) {
         model.addAttribute("appUser", emptyAppUser());
         model.addAttribute("appUsers", appUserService.findAllAppUsers());
-        model.addAttribute("roles", Role.values());
+        model.addAttribute("roles", RoleName.values());
         return "users/list";
     }
 
     @GetMapping("/form")
     public String emptyForm(Model model) {
         model.addAttribute("appUser", emptyAppUser());
-        model.addAttribute("roles", Role.values());
+        model.addAttribute("roles", RoleName.values());
         return "users/list :: user-form";
     }
 
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable Long id, Model model) {
-        model.addAttribute("roles", Role.values());
+        model.addAttribute("roles", RoleName.values());
         try {
             model.addAttribute("appUser", appUserService.toDTO(appUserService.findAppUserById(id)));
             //el id va aparte porque el DTO no lo tiene
@@ -53,7 +53,7 @@ public class AppUserController {
 
     @PostMapping
     public String create(@ModelAttribute AppUserDTO dto, Model model) {
-        model.addAttribute("roles", Role.values());
+        model.addAttribute("roles", RoleName.values());
         try {
             appUserService.createAppUser(dto);
             model.addAttribute("appUser", emptyAppUser());
@@ -69,7 +69,7 @@ public class AppUserController {
 
     @PutMapping("/{id}")
     public String update(@PathVariable Long id, @ModelAttribute AppUserDTO dto, Principal principal, Model model) {
-        model.addAttribute("roles", Role.values());
+        model.addAttribute("roles", RoleName.values());
         try {
             appUserService.updateAppUser(id, dto, principal.getName());
             model.addAttribute("appUser", emptyAppUser());
@@ -78,6 +78,19 @@ public class AppUserController {
         } catch (IllegalArgumentException | EntityNotFoundException e) {
             model.addAttribute("appUser", withoutPassword(dto));
             model.addAttribute("appUserId", id);
+            addToast(model, "error", e.getMessage());
+        }
+        return "users/response";
+    }
+
+    //Activa o desactiva la cuenta (un usuario inactivo no puede iniciar sesión)
+    @PatchMapping("/{id}/active")
+    public String toggleActive(@PathVariable Long id, Principal principal, Model model) {
+        try {
+            boolean active = appUserService.toggleActive(id, principal.getName()).isActive();
+            model.addAttribute("appUsers", appUserService.findAllAppUsers());
+            addToast(model, "success", active ? "Usuario activado" : "Usuario desactivado");
+        } catch (IllegalArgumentException | EntityNotFoundException e) {
             addToast(model, "error", e.getMessage());
         }
         return "users/response";

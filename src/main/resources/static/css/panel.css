@@ -791,7 +791,7 @@ small { color: var(--muted); font-size: 0.78rem; }
 /* Contenedor del mapa Leaflet (inyección HTMX) */
 #detail-map:empty { display: none; }
 #detail-map {
-    height: 280px;
+    height: clamp(340px, 55vh, 520px);   /* más grande, sin pasarse en pantallas bajas */
     margin: 0 1.5rem 1.5rem;
     border: 1px solid var(--border);
     border-radius: 12px;
@@ -914,8 +914,59 @@ small { color: var(--muted); font-size: 0.78rem; }
     .custom-table { min-width: 850px; }
 }
 
+/* ---------- Sidebar deslizable en pantallas angostas ----------
+   El botón ☰ (.sidebar-toggle, en fragments/header :: welcome) agrega
+   body.sidebar-open; el sidebar entra desde la izquierda sobre el contenido. */
+.sidebar-toggle {
+    display: none;
+    flex-shrink: 0;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--ink);
+    cursor: pointer;
+}
+.sidebar-toggle:hover { background: var(--tint); color: var(--primary-dark); }
+.sidebar-toggle [data-lucide],
+.sidebar-toggle svg { width: 20px; height: 20px; }
+
+@media (max-width: 1024px) {
+    .sidebar-toggle { display: grid; }
+    .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 900;
+        height: 100vh;
+        height: 100dvh;
+        overflow-y: auto;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    body.sidebar-open .sidebar {
+        transform: translateX(0);
+        box-shadow: 8px 0 32px rgba(23, 9, 51, 0.35);
+    }
+    /* Fondo oscuro detrás del sidebar abierto (clic = cerrar, ver panel.js) */
+    body.sidebar-open .app-shell::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        z-index: 899;
+        background: rgba(23, 9, 51, 0.45);
+    }
+    body.sidebar-open { overflow: hidden; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sidebar { transition: none; }
+}
+
 @media (max-width: 800px) {
-    .sidebar { display: none; }
     .main-content { --gutter: 1rem; padding-bottom: 1.5rem; }
     .page-title-section { flex-direction: column; }
     .table-actions { flex-direction: column; align-items: stretch; }
@@ -1557,3 +1608,152 @@ body:has(.welcome[data-daypart="night"]) {
     cursor: pointer;
 }
 .filter-check input { width: 16px; height: 16px; accent-color: var(--primary); }
+
+/* Ventana angosta: .table-actions pasa a columna y el "240px" de arriba se volvería
+   la ALTURA del buscador. Aquí cada control ocupa el ancho y solo la altura que necesita. */
+@media (max-width: 800px) {
+    .parts-filter .search-box { flex: 0 0 auto; }
+    .parts-filter .filter-select select { flex: 1; min-width: 0; }
+}
+
+
+/* =========================================================
+   TABLAS EDITABLES (.editable-table: repuestos RF-13 y modelos RF-04)
+   La fila en edición (.is-editing) cambia el texto por campos.
+   ========================================================= */
+/* Pista de que la celda se puede editar con doble clic */
+.editable-table tbody tr:not(.is-editing) td[data-field] { border-radius: 6px; }
+.editable-table tbody tr:not(.is-editing) td[data-field]:hover {
+    box-shadow: inset 0 0 0 1px var(--lavender);
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.editable-table tbody tr.is-editing,
+.editable-table tbody tr.is-editing:hover {
+    background: var(--row-selected);
+    cursor: default;
+}
+.editable-table tbody tr.is-editing td:first-child { box-shadow: inset 4px 0 0 var(--primary); }
+
+/* Imagen en la fila en edición: la miniatura es el botón para cambiarla */
+.cell-image {
+    position: relative;
+    display: inline-block;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.cell-image .thumb { display: block; border: 1.5px solid var(--primary); }
+.cell-image-overlay {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    color: #fff;
+    background: rgba(23, 9, 51, 0.45);
+    opacity: 0.85;
+    transition: opacity 0.15s ease, background 0.15s ease;
+}
+.cell-image-overlay [data-lucide],
+.cell-image-overlay svg { width: 18px; height: 18px; color: #fff; }
+.cell-image:hover .cell-image-overlay,
+.cell-image:focus-within .cell-image-overlay { opacity: 1; background: rgba(128, 52, 210, 0.6); }
+.cell-image:focus-within { box-shadow: 0 0 0 3px rgba(128, 52, 210, 0.24); }
+/* Imagen nueva elegida: la cámara se aparta para que se vea la imagen */
+.cell-image.has-new-image .cell-image-overlay { opacity: 0; }
+.cell-image.has-new-image:hover .cell-image-overlay { opacity: 1; }
+.cell-image.has-new-image .thumb { border-color: #0F8F6B; }
+
+/* Campo dentro de una celda: mismo borde morado de los campos de base.css */
+.cell-input {
+    width: 100%;
+    min-width: 0;
+    padding: 0.5rem 0.7rem;
+    font: inherit;
+    font-size: 0.875rem;
+    color: var(--ink);
+    background: #fff;
+    border: 1.5px solid var(--primary);
+    border-radius: 9px;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(128, 52, 210, 0.14);
+}
+.cell-input:focus { box-shadow: 0 0 0 4px rgba(128, 52, 210, 0.24); }
+.cell-input:user-invalid,
+.cell-money:has(input:user-invalid) { border-color: #C2255C; box-shadow: 0 0 0 3px rgba(194, 37, 92, 0.15); }
+
+/* Precio con el signo $ adentro del campo */
+.cell-money {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    cursor: text;
+}
+.cell-money:focus-within { box-shadow: 0 0 0 4px rgba(128, 52, 210, 0.24); }
+.cell-money span { color: var(--muted); font-weight: 600; }
+.cell-money input {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font: inherit;
+    color: inherit;
+}
+.cell-stock { max-width: 6.5rem; }
+.cell-code { max-width: 10.5rem; font-family: monospace; }
+
+/* Botón verde de guardar */
+.btn-success {
+    background: #0F8F6B;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(15, 143, 107, 0.3);
+}
+.btn-success:hover { background: #0b7457; }
+
+/* Pista "Enter guarda · Esc cancela": solo mientras hay una fila en edición */
+.edit-hint {
+    display: none;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0.7rem 1.25rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.82rem;
+    color: var(--muted);
+}
+.table-container:has(tr.is-editing) .edit-hint { display: flex; }
+.edit-hint [data-lucide],
+.edit-hint svg { width: 15px; height: 15px; }
+.edit-hint kbd {
+    padding: 0.05rem 0.4rem;
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    background: #fff;
+    font-family: inherit;
+    font-size: 0.78rem;
+    color: var(--ink);
+}
+
+
+/* =========================================================
+   CATÁLOGO DE MODELOS (car-models/list.html)
+   Solo dos columnas de texto: filas más bajas y acciones pegadas a la derecha.
+   ========================================================= */
+/* No necesita el ancho mínimo de las tablas grandes */
+#car-model-table { min-width: 0; }
+#car-model-table td { padding-top: 0.55rem; padding-bottom: 0.55rem; }
+#car-model-table th:first-child,
+#car-model-table td:first-child { width: 42%; }
+#car-model-table th:last-child,
+#car-model-table td:last-child { width: 1%; white-space: nowrap; }
+
+/* Fila en edición: el ✓ toma el color del botón (no el lavanda de ".custom-table td [data-lucide]") */
+.editable-table tr.is-editing .row-actions .btn [data-lucide],
+.editable-table tr.is-editing .row-actions .btn svg { color: inherit; }
+
+/* Fila en edición: "Guardar" y "Cancelar" con texto, para que no se confundan con editar/eliminar */
+.editable-table tr.is-editing .row-actions .btn-sm { padding: 0.45rem 0.8rem; }
+.editable-table tr.is-editing .row-actions .btn-outline { color: var(--ink); }

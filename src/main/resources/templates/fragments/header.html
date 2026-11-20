@@ -23,6 +23,12 @@
               daypart=${hour >= 5 and hour < 12 ? 'morning' : (hour >= 12 and hour < 19 ? 'afternoon' : 'night')}"
      data-daypart="morning" th:data-daypart="${daypart}">
 
+    <!-- Botón ☰: solo se ve en pantallas angostas (panel.css), abre y cierra el sidebar (panel.js) -->
+    <button type="button" class="sidebar-toggle" aria-label="Abrir menú"
+            aria-controls="app-sidebar" aria-expanded="false">
+        <i data-lucide="menu"></i>
+    </button>
+
     <span class="welcome-icon" aria-hidden="true">
         <i data-lucide="sun" class="for-morning"></i>
         <i data-lucide="sunset" class="for-afternoon"></i>

@@ -128,6 +128,7 @@
                     <th scope="col">Usuario</th>
                     <th scope="col">Nombre</th>
                     <th scope="col">Rol</th>
+                    <th scope="col">Estado</th>
                     <th scope="col"><span class="sr-only">Acciones</span></th>
                 </tr>
                 </thead>
@@ -136,24 +137,42 @@
                 <tr th:each="u : ${appUsers}">
                     <td><strong th:text="${u.username}">admin</strong></td>
                     <td th:text="${u.fullName}">Administrador</td>
-                    <td><span class="badge badge-role" th:text="${u.role.label}">Administrador</span></td>
+                    <td><span class="badge badge-role" th:text="${u.role.name.label}">Administrador</span></td>
+                    <td>
+                        <span class="badge" th:classappend="${u.active} ? 'badge-green' : 'badge-gray'"
+                              th:text="${u.active} ? 'Activo' : 'Inactivo'">Activo</span>
+                    </td>
                     <td>
                         <div class="row-actions">
-                            <button type="button" class="btn btn-outline btn-sm"
+                            <button type="button" class="btn btn-outline btn-sm btn-icon"
+                                    title="Editar" aria-label="Editar"
                                     hx-get="/users/1/edit"
                                     th:hx-get="@{/users/{id}/edit(id=${u.id})}"
                                     hx-target="#user-form"
                                     hx-swap="outerHTML">
-                                <i data-lucide="pencil"></i> Editar
+                                <i data-lucide="pencil"></i>
                             </button>
 
-                            <button type="button" class="btn btn-danger-soft btn-sm"
+                            <!-- Desactivar no borra al usuario: solo le impide iniciar sesión -->
+                            <button type="button" class="btn btn-outline btn-sm btn-icon"
+                                    title="Desactivar" aria-label="Desactivar"
+                                    th:title="${u.active} ? 'Desactivar' : 'Activar'"
+                                    th:aria-label="${u.active} ? 'Desactivar' : 'Activar'"
+                                    hx-patch="/users/1/active"
+                                    th:hx-patch="@{/users/{id}/active(id=${u.id})}"
+                                    hx-swap="none"
+                                    th:hx-confirm="${u.active} ? |¿Desactivar a ${u.fullName}? No podrá iniciar sesión| : |¿Activar a ${u.fullName}?|">
+                                <i th:attr="data-lucide=${u.active} ? 'user-x' : 'user-check'" data-lucide="user-x"></i>
+                            </button>
+
+                            <button type="button" class="btn btn-danger-soft btn-sm btn-icon"
+                                    title="Eliminar" aria-label="Eliminar"
                                     hx-delete="/users/1"
                                     th:hx-delete="@{/users/{id}(id=${u.id})}"
                                     hx-swap="none"
                                     hx-confirm="¿Eliminar este usuario?"
                                     th:hx-confirm="|¿Eliminar a ${u.fullName}?|">
-                                <i data-lucide="trash-2"></i> Eliminar
+                                <i data-lucide="trash-2"></i>
                             </button>
                         </div>
                     </td>
@@ -164,16 +183,18 @@
                     <td><strong>mecanico1</strong></td>
                     <td>Juan Pérez</td>
                     <td><span class="badge badge-role">Mecánico</span></td>
+                    <td><span class="badge badge-green">Activo</span></td>
                     <td>
                         <div class="row-actions">
-                            <button type="button" class="btn btn-outline btn-sm"><i data-lucide="pencil"></i> Editar</button>
-                            <button type="button" class="btn btn-danger-soft btn-sm"><i data-lucide="trash-2"></i> Eliminar</button>
+                            <button type="button" class="btn btn-outline btn-sm btn-icon" aria-label="Editar"><i data-lucide="pencil"></i></button>
+                            <button type="button" class="btn btn-outline btn-sm btn-icon" aria-label="Desactivar"><i data-lucide="user-x"></i></button>
+                            <button type="button" class="btn btn-danger-soft btn-sm btn-icon" aria-label="Eliminar"><i data-lucide="trash-2"></i></button>
                         </div>
                     </td>
                 </tr>
 
                 <tr class="empty-row" th:if="${#lists.isEmpty(appUsers)}">
-                    <td colspan="4">No hay usuarios registrados</td>
+                    <td colspan="5">No hay usuarios registrados</td>
                 </tr>
                 </tbody>
             </table>

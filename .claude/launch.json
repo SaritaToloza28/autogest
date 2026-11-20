@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "autogest",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "C:\\Users\\sarit\\Documents\\2026_2\\Proyecto\\autogest\\gradlew.bat", "bootRun"],
+      "port": 8080
+    }
+  ]
+}

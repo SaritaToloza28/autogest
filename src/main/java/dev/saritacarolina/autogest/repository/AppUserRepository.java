@@ -1,6 +1,6 @@
 package dev.saritacarolina.autogest.repository;
 
-import dev.saritacarolina.autogest.model.constant.Role;
+import dev.saritacarolina.autogest.model.constant.RoleName;
 import dev.saritacarolina.autogest.model.entity.AppUser;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -13,8 +13,8 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
 
     List<AppUser> findAllByOrderByFullNameAsc();
 
-    //Lista de mecánicos para asignar reparaciones
-    List<AppUser> findByRoleOrderByFullNameAsc(Role role);
+    //Lista de mecánicos activos para asignar reparaciones (Role_Name = role.name)
+    List<AppUser> findByRole_NameAndIsActiveTrueOrderByFullNameAsc(RoleName name);
 
     Optional<AppUser> findByUsername(String username);
 

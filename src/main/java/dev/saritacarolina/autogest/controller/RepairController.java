@@ -17,8 +17,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
 
-//TODO: revisar nuevos cambios(están más abajo, son varios)
-
 //Órdenes del operador
 @Controller
 @RequestMapping("/repairs")
@@ -221,14 +219,15 @@ public class RepairController {
             showFoundVehicle(model, vehicle, vehicle.getPlateColor());
             model.addAttribute("toastType", "success");
             model.addAttribute("toastMessage", "Datos del vehículo actualizados");
-        } catch (IllegalArgumentException | EntityNotFoundException e) {
-            try {
-                addVehicleStep(model, "found", vehicleService.findVehicleById(vehicleId), vehicleRequest);
-                model.addAttribute("vehicleError", e.getMessage());
-            } catch (EntityNotFoundException notFound) {
-                addVehicleStep(model, "search", null, VehicleDTO.empty());
-                model.addAttribute("vehicleError", notFound.getMessage());
-            }
+        } catch (EntityNotFoundException e) {
+            //el vehículo ya no existe: se vuelve a la búsqueda
+            addVehicleStep(model, "search", null, VehicleDTO.empty());
+            model.addAttribute("vehicleError", e.getMessage());
+        } catch (IllegalArgumentException e) {
+            //datos inválidos: el vehículo sí existe (updateVehicle lo busca antes de validar),
+            //se muestra otra vez con lo que escribió el usuario
+            addVehicleStep(model, "found", vehicleService.findVehicleById(vehicleId), vehicleRequest);
+            model.addAttribute("vehicleError", e.getMessage());
         }
 
         return "repairs/vehicle-response";

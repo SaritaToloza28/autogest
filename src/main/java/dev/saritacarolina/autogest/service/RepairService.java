@@ -1,7 +1,7 @@
 package dev.saritacarolina.autogest.service;
 
 import dev.saritacarolina.autogest.model.constant.RepairStatus;
-import dev.saritacarolina.autogest.model.constant.Role;
+import dev.saritacarolina.autogest.model.constant.RoleName;
 import dev.saritacarolina.autogest.model.constant.ServiceType;
 import dev.saritacarolina.autogest.model.dto.RepairDTO;
 import dev.saritacarolina.autogest.model.dto.RepairStatusDTO;
@@ -102,11 +102,6 @@ public class RepairService {
         return this.sparePartRepository.findByCompatibleModelsIdOrderByNameAsc(carModelId);
     }
 
-    //Vista del mecánico: una orden, solo si está asignada a él
-    public Repair findAssignedRepairById(Long repairId, String username) throws EntityNotFoundException, IllegalArgumentException {
-        return findAssignedRepair(repairId, username);
-    }
-
     // ---------- Registro (operador) ----------
 
     //El vehículo se busca o registra antes
@@ -160,13 +155,13 @@ public class RepairService {
     // ---------- Cambios de estado ----------
 
     public void startRepair(Long repairId, String username) throws EntityNotFoundException, IllegalArgumentException {
-        Repair repair = findAssignedRepair(repairId, username);
+        Repair repair = findAssignedRepairById(repairId, username);
 
         changeStatus(repair, RepairStatus.IN_PROGRESS);
     }
 
     public void completeRepair(Long repairId, String username) throws EntityNotFoundException, IllegalArgumentException {
-        Repair repair = findAssignedRepair(repairId, username);
+        Repair repair = findAssignedRepairById(repairId, username);
 
         changeStatus(repair, RepairStatus.COMPLETED);
     }
@@ -200,7 +195,7 @@ public class RepairService {
     //Descuenta el stock
     @Transactional
     public void addSparePart(Long repairId, Long sparePartId, Integer quantity, String username) throws EntityNotFoundException, IllegalArgumentException {
-        Repair repair = findAssignedRepair(repairId, username);
+        Repair repair = findAssignedRepairById(repairId, username);
 
         validateInProgress(repair);
 
@@ -239,7 +234,7 @@ public class RepairService {
     //Quita el repuesto de la reparación y devuelve la cantidad al stock
     @Transactional
     public void removeSparePart(Long repairId, Long sparePartId, String username) throws EntityNotFoundException, IllegalArgumentException {
-        Repair repair = findAssignedRepair(repairId, username);
+        Repair repair = findAssignedRepairById(repairId, username);
 
         validateInProgress(repair);
 
@@ -288,19 +283,23 @@ public class RepairService {
         );
     }
 
-    //El usuario asignado debe tener rol de mecánico
+    //El usuario asignado debe tener rol de mecánico y estar activo
     private AppUser findMechanic(Long mechanicId) throws EntityNotFoundException, IllegalArgumentException {
         AppUser mechanic = this.appUserService.findAppUserById(mechanicId);
 
-        if (mechanic.getRole() != Role.MECHANIC){
+        if (mechanic.getRole().getName() != RoleName.ROLE_MECHANIC){
             throw new IllegalArgumentException("El usuario " + mechanic.getUsername() + " no es mecánico");
+        }
+
+        if (!mechanic.isActive()){
+            throw new IllegalArgumentException("El mecánico " + mechanic.getFullName() + " está inactivo");
         }
 
         return mechanic;
     }
 
-    //El mecánico solo puede trabajar sus propias reparaciones
-    private Repair findAssignedRepair(Long repairId, String username) throws EntityNotFoundException, IllegalArgumentException {
+    //Vista del mecánico: una orden, solo si está asignada a él (solo puede trabajar sus propias reparaciones)
+    public Repair findAssignedRepairById(Long repairId, String username) throws EntityNotFoundException, IllegalArgumentException {
         Repair repair = findRepairById(repairId);
 
         if (!repair.getMechanic().getUsername().equals(username)){

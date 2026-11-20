@@ -104,7 +104,7 @@
 
         <!-- Tabla (vuelve con hx-swap-oob después de guardar o eliminar) -->
         <section class="table-container card" aria-label="Modelos de vehículo">
-            <table id="car-model-table" class="custom-table static-rows" th:fragment="table"
+            <table id="car-model-table" class="custom-table static-rows editable-table" th:fragment="table"
                    th:hx-swap-oob="${oob} ? 'true'">
                 <thead>
                 <tr>
@@ -115,30 +115,79 @@
                 </thead>
 
                 <tbody>
-                <tr th:each="m : ${carModels}">
-                    <td><strong th:text="${m.brand}">Mazda</strong></td>
-                    <td th:text="${m.name}">3</td>
-                    <td>
-                        <div class="row-actions">
-                            <button type="button" class="btn btn-outline btn-sm"
-                                    hx-get="/car-models/1/edit"
-                                    th:hx-get="@{/car-models/{id}/edit(id=${m.id})}"
-                                    hx-target="#car-model-form"
-                                    hx-swap="outerHTML">
-                                <i data-lucide="pencil"></i> Editar
-                            </button>
+                <!-- Tabla editable: cada fila tiene dos versiones.
+                       · "row"      -> modo lectura (aquí y sola como "car-models/list :: row", modelo en "m").
+                       · "row-edit" -> marca y modelo en campos (solo sola como "car-models/list :: row-edit").
+                     El lápiz o el doble clic en una celda pide "row-edit"; Guardar (Enter) hace PUT
+                     y Cancelar (Esc) vuelve a la fila sin guardar (panel.js pregunta si hubo cambios). -->
+                <th:block th:each="m : ${carModels}">
+                    <tr th:fragment="row" data-id="1" th:data-id="${m.id}"
+                        title="Doble clic en una celda para editar">
+                        <td data-field="brand"><strong th:text="${m.brand}">Mazda</strong></td>
+                        <td data-field="name" th:text="${m.name}">3</td>
+                        <td>
+                            <div class="row-actions">
+                                <button type="button" class="btn btn-outline btn-sm btn-icon"
+                                        title="Editar en la tabla" aria-label="Editar en la tabla"
+                                        data-row-edit
+                                        hx-get="/car-models/1/row/edit"
+                                        th:hx-get="@{/car-models/{id}/row/edit(id=${m.id})}"
+                                        hx-target="closest tr"
+                                        hx-swap="outerHTML">
+                                    <i data-lucide="pencil"></i>
+                                </button>
 
-                            <button type="button" class="btn btn-danger-soft btn-sm"
-                                    hx-delete="/car-models/1"
-                                    th:hx-delete="@{/car-models/{id}(id=${m.id})}"
-                                    hx-swap="none"
-                                    hx-confirm="¿Eliminar este modelo?"
-                                    th:hx-confirm="|¿Eliminar ${m.brand} ${m.name}?|">
-                                <i data-lucide="trash-2"></i> Eliminar
-                            </button>
-                        </div>
-                    </td>
-                </tr>
+                                <button type="button" class="btn btn-danger-soft btn-sm btn-icon"
+                                        title="Eliminar" aria-label="Eliminar"
+                                        hx-delete="/car-models/1"
+                                        th:hx-delete="@{/car-models/{id}(id=${m.id})}"
+                                        hx-swap="none"
+                                        hx-confirm="¿Eliminar este modelo?"
+                                        th:hx-confirm="|¿Eliminar ${m.brand} ${m.name}?|">
+                                    <i data-lucide="trash-2"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </th:block>
+
+                <!-- Fila en modo edición: Spring nunca la pinta aquí (th:if false) -->
+                <th:block th:if="${false}">
+                    <tr th:fragment="row-edit" class="is-editing" data-id="2" th:data-id="${m.id}">
+                        <td>
+                            <input class="cell-input" type="text" name="brand" maxlength="60" required
+                                   aria-label="Marca" value="Chevrolet" th:value="${m.brand}">
+                        </td>
+                        <td>
+                            <input class="cell-input" type="text" name="name" maxlength="60" required
+                                   aria-label="Modelo" value="Spark GT" th:value="${m.name}">
+                        </td>
+                        <td>
+                            <div class="row-actions">
+                                <button type="button" class="btn btn-success btn-sm"
+                                        title="Guardar (Enter)"
+                                        data-row-save
+                                        hx-put="/car-models/2/row"
+                                        th:hx-put="@{/car-models/{id}/row(id=${m.id})}"
+                                        hx-include="closest tr"
+                                        hx-validate="true"
+                                        hx-target="closest tr"
+                                        hx-swap="outerHTML">
+                                    <i data-lucide="check"></i> Guardar
+                                </button>
+                                <button type="button" class="btn btn-outline btn-sm"
+                                        title="Cancelar (Esc)"
+                                        data-row-cancel
+                                        hx-get="/car-models/2/row"
+                                        th:hx-get="@{/car-models/{id}/row(id=${m.id})}"
+                                        hx-target="closest tr"
+                                        hx-swap="outerHTML">
+                                    Cancelar
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </th:block>
 
                 <!-- Fila de ejemplo: solo en la vista estática, Spring la elimina -->
                 <tr th:remove="all">
@@ -146,8 +195,8 @@
                     <td>Spark</td>
                     <td>
                         <div class="row-actions">
-                            <button type="button" class="btn btn-outline btn-sm"><i data-lucide="pencil"></i> Editar</button>
-                            <button type="button" class="btn btn-danger-soft btn-sm"><i data-lucide="trash-2"></i> Eliminar</button>
+                            <button type="button" class="btn btn-outline btn-sm btn-icon" aria-label="Editar en la tabla"><i data-lucide="pencil"></i></button>
+                            <button type="button" class="btn btn-danger-soft btn-sm btn-icon" aria-label="Eliminar"><i data-lucide="trash-2"></i></button>
                         </div>
                     </td>
                 </tr>
@@ -157,6 +206,12 @@
                 </tr>
                 </tbody>
             </table>
+
+            <!-- Pista: el CSS la muestra solo mientras hay una fila en edición -->
+            <p class="edit-hint" aria-live="polite">
+                <i data-lucide="info"></i>
+                Pulsa <kbd>Enter</kbd> para guardar o <kbd>Esc</kbd> para cancelar.
+            </p>
         </section>
 
     </main>

@@ -201,6 +201,20 @@ TODO: revisar todo
     animation-play-state: running;
 }
 
+/* Botones del panel (.btn, más angostos): el spinner va al inicio del texto, no encima.
+   Solo ocupa espacio mientras carga, así el texto no se corre cuando no hay petición. */
+.btn.btn-submit::after {
+    position: static;
+    order: -1;
+    flex: none;
+    margin-top: 0;
+    display: none;
+}
+
+.htmx-request .btn.btn-submit::after {
+    display: inline-block;
+}
+
 .link-back {
     display: block;
     margin-top: 1.5rem;
@@ -434,7 +448,7 @@ body:has(.modal-overlay[open]) { overflow: hidden; }
 }
 
 #modal-map {
-    height: 180px;
+    height: clamp(260px, 42vh, 380px);   /* más grande, sin pasarse en pantallas bajas */
     width: 100%;
     border: 1px solid rgba(128, 52, 210, .2);
     border-radius: 12px;
